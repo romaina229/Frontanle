@@ -1,0 +1,386 @@
+/* src/index.css - CORRECTION DÉBORDEMENT ET MOBILE */
+
+/* Reset et styles de base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* ================================
+   LAYOUT PRINCIPAL - CORRECTION
+   ================================ */
+
+.ant-layout {
+  min-height: 100vh;
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================
+   HEADER FIXE EN HAUT
+   ================================ */
+.ant-layout-header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 64px !important;
+  padding: 0 24px !important;
+  line-height: 64px !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ================================
+   SIDEBAR - CORRECTION DÉBORDEMENT
+   ================================ */
+.ant-layout-sider {
+  position: fixed !important;
+  left: 0;
+  top: 64px !important;
+  bottom: auto !important; /* NE VA PAS JUSQU'EN BAS */
+  height: calc(100vh - 64px) !important; /* Hauteur = viewport - header */
+  max-height: calc(100vh - 64px) !important; /* Empêche le débordement */
+  z-index: 99;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  transition: left 0.3s, width 0.2s;
+}
+
+/* Sidebar ouvert sur desktop */
+.ant-layout-sider:not(.ant-layout-sider-collapsed) {
+  left: 0;
+}
+
+/* ================================
+   CONTENU PRINCIPAL
+   ================================ */
+.ant-layout-content {
+  margin-top: 10px !important;
+  margin-left: 10px !important;
+  padding: 24px;
+  flex: 1; /* Prend l'espace restant */
+  background: #f0f2f5;
+  transition: margin-left 0.2s;
+  min-height: calc(100vh - 64px - 250px); /* Minimum de hauteur */
+}
+
+/* ================================
+   FOOTER - NE CHEVAUCHE PAS LE SIDEBAR
+   ================================ */
+.ant-layout-footer {
+  margin-left: 2px !important; 
+  padding: 16px 24px !important;
+  transition: margin-left 0.2s;
+  z-index: 99; /* Sous le sidebar */
+  margin-top: auto !important; /* Reste en bas */
+}
+
+/* ================================
+   RESPONSIVE - MOBILE
+   ================================ */
+
+/* Tablette et petit desktop */
+@media (max-width: 1200px) {
+  .ant-layout-content {
+    padding: 20px;
+  }
+}
+
+/* Tablette */
+@media (max-width: 991px) {
+  /* Header pleine largeur */
+  .ant-layout-header {
+    left: 0 !important;
+    right: 0 !important;
+    padding: 0 16px !important;
+  }
+  
+  /* Sidebar en overlay caché par défaut */
+  .ant-layout-sider {
+    left: -250px !important; /* Caché à gauche */
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Sidebar ouvert (overlay) */
+  .ant-layout-sider:not(.ant-layout-sider-collapsed) {
+    left: 0 !important; /* Visible */
+  }
+  
+  /* Contenu pleine largeur sur mobile */
+  .ant-layout-content {
+    margin-left: 0 !important;
+    padding: 16px;
+  }
+  
+  /* Footer pleine largeur */
+  .ant-layout-footer {
+    margin-left: 0 !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .ant-layout-header {
+    padding: 0 12px !important;
+  }
+  
+  .ant-layout-content {
+    padding: 12px;
+  }
+  
+  /* Cacher le sous-titre sur mobile */
+  .header-subtitle {
+    display: none !important;
+  }
+  
+  /* Réduire les titres */
+  h1, .ant-typography h1 {
+    font-size: 20px !important;
+  }
+  
+  h2, .ant-typography h2 {
+    font-size: 18px !important;
+  }
+}
+
+/* Très petit mobile */
+@media (max-width: 576px) {
+  .ant-layout-header {
+    padding: 0 8px !important;
+  }
+  
+  .ant-layout-content {
+    padding: 8px;
+  }
+  
+  /* Réduire encore les titres */
+  h1, .ant-typography h1 {
+    font-size: 18px !important;
+  }
+}
+
+/* ================================
+   OVERLAY MOBILE (pour sidebar)
+   ================================ */
+.sidebar-overlay {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 98;
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .sidebar-overlay.active {
+    display: block;
+  }
+}
+
+/* ================================
+   DASHBOARD SPACING
+   ================================ */
+.dashboard-content {
+  padding-top: 0 !important;
+}
+
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.dashboard-header {
+  background: white;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ================================
+   CARDS ET SPACING
+   ================================ */
+.ant-card {
+  margin-bottom: 0 !important;
+  border-radius: 8px;
+}
+
+.ant-row {
+  margin-bottom: 0 !important;
+}
+
+.ant-row + .ant-row {
+  margin-top: 24px !important;
+}
+
+/* ================================
+   SCROLLBAR PERSONNALISÉE
+   ================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Scrollbar pour le sidebar */
+.ant-layout-sider::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+/* ================================
+   ANIMATIONS
+   ================================ */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* ================================
+   UTILITAIRES
+   ================================ */
+.text-center {
+  text-align: center;
+}
+
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: 8px !important; }
+.mt-2 { margin-top: 16px !important; }
+.mt-3 { margin-top: 24px !important; }
+.mt-4 { margin-top: 32px !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 8px !important; }
+.mb-2 { margin-bottom: 16px !important; }
+.mb-3 { margin-bottom: 24px !important; }
+.mb-4 { margin-bottom: 32px !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: 8px !important; }
+.p-2 { padding: 16px !important; }
+.p-3 { padding: 24px !important; }
+.p-4 { padding: 32px !important; }
+
+/* ================================
+   CORRECTIONS SPÉCIFIQUES
+   ================================ */
+
+/* Empêcher le sidebar de dépasser le contenu */
+.app-sidebar {
+  max-height: calc(100vh - 64px) !important;
+  overflow-y: auto !important;
+}
+
+/* S'assurer que le footer ne chevauche pas */
+.ant-layout {
+  position: relative;
+}
+
+/* Menu du sidebar avec scroll si nécessaire */
+.ant-menu-inline {
+  border-right: 0 !important;
+}
+
+/* ================================
+   PRINT STYLES
+   ================================ */
+@media print {
+  .ant-layout-sider,
+  .ant-layout-header,
+  .sidebar-overlay,
+  .no-print {
+    display: none !important;
+  }
+  
+  .ant-layout-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .ant-layout-footer {
+    margin: 0 !important;
+  }
+}
+
+/* ================================
+   FIXES POUR ANT DESIGN
+   ================================ */
+
+/* Éviter les sauts de layout */
+.ant-layout,
+.ant-layout * {
+  transition-duration: 0.2s;
+}
+
+/* Menu items sur mobile */
+@media (max-width: 991px) {
+  .ant-menu-item,
+  .ant-menu-submenu-title {
+    padding-left: 24px !important;
+  }
+}
