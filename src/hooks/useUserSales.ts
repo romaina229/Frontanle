@@ -7,7 +7,7 @@ export const useSales = (filters?: any, page = 1, limit = 10) => {
   return useQuery({
     queryKey: ['sales', filters, page, limit],
     queryFn: () => saleService.getAll({ ...filters, page, limit }),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -34,7 +34,7 @@ export const useCreateSale = () => {
     mutationFn: saleService.create,
     onSuccess: () => {
       message.success('Vente enregistrée avec succès');
-      queryClient.invalidateQueries(['sales']);
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de l\'enregistrement');
@@ -50,7 +50,7 @@ export const useUpdateSale = () => {
       saleService.update(id, data),
     onSuccess: (_, variables) => {
       message.success('Vente mise à jour avec succès');
-      queryClient.invalidateQueries(['sales']);
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries(['sale', variables.id]);
     },
     onError: (error: any) => {
@@ -66,7 +66,7 @@ export const useDeleteSale = () => {
     mutationFn: saleService.delete,
     onSuccess: () => {
       message.success('Vente supprimée avec succès');
-      queryClient.invalidateQueries(['sales']);
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la suppression');
@@ -81,7 +81,7 @@ export const useGenerateInvoice = () => {
     mutationFn: (id: number) => saleService.generateInvoice(id),
     onSuccess: () => {
       message.success('Facture générée avec succès');
-      queryClient.invalidateQueries(['sales']);
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la génération');

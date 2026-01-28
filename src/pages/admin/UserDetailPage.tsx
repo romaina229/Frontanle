@@ -241,7 +241,7 @@ const UserDetailPage: React.FC = () => {
                 danger={user.active}
                 icon={user.active ? <CloseCircleOutlined /> : <CheckCircleOutlined />}
                 onClick={handleToggleStatus}
-                loading={toggleMutation.isLoading}
+                loading={toggleMutation.isPending}
               >
                 {user.active ? 'Désactiver' : 'Activer'}
               </Button>
@@ -587,7 +587,7 @@ const UserDetailPage: React.FC = () => {
               <Button 
                 type="primary" 
                 htmlType="submit"
-                loading={resetPasswordMutation.isLoading}
+                loading={resetPasswordMutation.isPending}
               >
                 Réinitialiser
               </Button>

@@ -26,7 +26,7 @@ export const useUpdateSettings = () => {
     mutationFn: (settings: Record<string, any>) => settingsService.update(settings),
     onSuccess: (response) => {
       message.success(response.message || 'Paramètres mis à jour avec succès');
-      queryClient.invalidateQueries(['settings']);
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
@@ -41,7 +41,7 @@ export const useCreateBackup = () => {
     mutationFn: () => settingsService.createBackup(),
     onSuccess: (response) => {
       message.success(response.message || 'Sauvegarde créée avec succès');
-      queryClient.invalidateQueries(['backups']);
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la sauvegarde');
@@ -63,8 +63,8 @@ export const useRestoreBackup = () => {
     mutationFn: (filename: string) => settingsService.restoreBackup(filename),
     onSuccess: (response) => {
       message.success(response.message || 'Restauration effectuée avec succès');
-      queryClient.invalidateQueries(['settings']);
-      queryClient.invalidateQueries(['backups']);
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
       
       // Avertir l'utilisateur qu'il doit se reconnecter
       notification.info({
@@ -86,7 +86,7 @@ export const useDeleteBackup = () => {
     mutationFn: (filename: string) => settingsService.deleteBackup(filename),
     onSuccess: (response) => {
       message.success(response.message || 'Sauvegarde supprimée avec succès');
-      queryClient.invalidateQueries(['backups']);
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la suppression');
@@ -125,12 +125,12 @@ export const useImportData = () => {
       settingsService.importData(file, type),
     onSuccess: (response) => {
       message.success(response.message || 'Import réussi');
-      queryClient.invalidateQueries(['settings']);
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
       // Invalider les caches selon le type importé
-      if (type.includes('user')) queryClient.invalidateQueries(['users']);
-      if (type.includes('product')) queryClient.invalidateQueries(['products']);
-      if (type.includes('sale')) queryClient.invalidateQueries(['sales']);
-      if (type.includes('client')) queryClient.invalidateQueries(['clients']);
+      if (type.includes('user')) queryClient.invalidateQueries({ queryKey: ['users'] });
+      if (type.includes('product')) queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (type.includes('sale')) queryClient.invalidateQueries({ queryKey: ['sales'] });
+      if (type.includes('client')) queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de l\'import');
@@ -186,7 +186,7 @@ export const useApplyUpdate = () => {
     mutationFn: () => settingsService.applyUpdate(),
     onSuccess: (response) => {
       message.success(response.message || 'Mise à jour appliquée avec succès');
-      queryClient.invalidateQueries(['updates']);
+      queryClient.invalidateQueries({ queryKey: ['updates'] });
       // Rediriger ou recharger la page
       setTimeout(() => {
         window.location.reload();

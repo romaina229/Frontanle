@@ -326,3 +326,14 @@ export interface SystemStats {
 }
 
 export type UserRole = keyof typeof USER_ROLES;
+
+// Types pour les filtres de produits
+export interface ProductFilters {
+  search?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}

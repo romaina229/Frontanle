@@ -1,6 +1,16 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { Product, ProductFilters, PaginatedResponse } from '../../types';
+import { Product, PaginatedResponse } from '../../types';
 import api from '../../services/api';
+
+interface ProductFilters {
+  search: string;
+  category: string;
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}
 
 interface ProductState {
   products: Product[];
@@ -38,7 +48,6 @@ const initialState: ProductState = {
   }
 };
 
-// Thunks pour les opérations asynchrones
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
   async (params: { page?: number; filters?: Partial<ProductFilters> } = {}, { getState }) => {
@@ -52,7 +61,6 @@ export const fetchProducts = createAsyncThunk(
       ...filters
     };
     
-    // Nettoyer les paramètres undefined
     Object.keys(queryParams).forEach(key => {
       if (queryParams[key as keyof typeof queryParams] === undefined) {
         delete queryParams[key as keyof typeof queryParams];
@@ -118,7 +126,7 @@ const productSlice = createSlice({
   reducers: {
     setFilters: (state, action: PayloadAction<Partial<ProductFilters>>) => {
       state.filters = { ...state.filters, ...action.payload };
-      state.pagination.page = 1; // Reset to first page when filters change
+      state.pagination.page = 1;
     },
     
     setPage: (state, action: PayloadAction<number>) => {
@@ -140,7 +148,6 @@ const productSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchProducts
       .addCase(fetchProducts.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -150,9 +157,9 @@ const productSlice = createSlice({
         state.products = action.payload.data;
         state.pagination = {
           ...state.pagination,
-          page: action.payload.meta?.currentPage || 1,
+          page: action.payload.meta?.current_page || 1,
           total: action.payload.meta?.total || 0,
-          totalPages: action.payload.meta?.lastPage || 1
+          totalPages: action.payload.meta?.last_page || 1
         };
       })
       .addCase(fetchProducts.rejected, (state, action) => {
@@ -160,7 +167,6 @@ const productSlice = createSlice({
         state.error = action.error.message || 'Erreur lors du chargement des produits';
       })
       
-      // fetchProductById
       .addCase(fetchProductById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -174,14 +180,13 @@ const productSlice = createSlice({
         state.error = action.error.message || 'Erreur lors du chargement du produit';
       })
       
-      // createProduct
       .addCase(createProduct.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(createProduct.fulfilled, (state, action) => {
         state.loading = false;
-        state.products.unshift(action.payload); // Add new product at the beginning
+        state.products.unshift(action.payload);
         state.currentProduct = action.payload;
       })
       .addCase(createProduct.rejected, (state, action) => {
@@ -189,21 +194,16 @@ const productSlice = createSlice({
         state.error = action.error.message || 'Erreur lors de la création du produit';
       })
       
-      // updateProduct
       .addCase(updateProduct.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateProduct.fulfilled, (state, action) => {
         state.loading = false;
-        
-        // Update product in list
         const index = state.products.findIndex(p => p.id === action.payload.id);
         if (index !== -1) {
           state.products[index] = action.payload;
         }
-        
-        // Update current product if it's the one being edited
         if (state.currentProduct?.id === action.payload.id) {
           state.currentProduct = action.payload;
         }
@@ -213,17 +213,13 @@ const productSlice = createSlice({
         state.error = action.error.message || 'Erreur lors de la mise à jour du produit';
       })
       
-      // deleteProduct
       .addCase(deleteProduct.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.loading = false;
-        // Remove product from list
         state.products = state.products.filter(product => product.id !== action.payload);
-        
-        // Clear current product if it was deleted
         if (state.currentProduct?.id === action.payload) {
           state.currentProduct = null;
         }
@@ -233,23 +229,18 @@ const productSlice = createSlice({
         state.error = action.error.message || 'Erreur lors de la suppression du produit';
       })
       
-      // updateStock
       .addCase(updateStock.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateStock.fulfilled, (state, action) => {
         state.loading = false;
-        
-        // Update product stock in list
         const index = state.products.findIndex(p => p.id === action.payload.id);
         if (index !== -1) {
-          state.products[index].stock = action.payload.stock;
+          state.products[index].stock_quantity = action.payload.stock_quantity;
         }
-        
-        // Update current product stock if it's the one being updated
         if (state.currentProduct?.id === action.payload.id) {
-          state.currentProduct.stock = action.payload.stock;
+          state.currentProduct.stock_quantity = action.payload.stock_quantity;
         }
       })
       .addCase(updateStock.rejected, (state, action) => {
@@ -261,7 +252,6 @@ const productSlice = createSlice({
 
 export const { setFilters, setPage, clearCurrentProduct, clearError, resetFilters } = productSlice.actions;
 
-// Sélecteurs TypeScript corrects
 export const selectProducts = (state: { products: ProductState }): Product[] => state.products.products;
 export const selectCurrentProduct = (state: { products: ProductState }): Product | null => state.products.currentProduct;
 export const selectProductsLoading = (state: { products: ProductState }): boolean => state.products.loading;

@@ -8,7 +8,7 @@ export const useUsers = (filters?: UserFilters, page = 1, limit = 10) => {
   return useQuery({
     queryKey: ['users', filters, page, limit],
     queryFn: () => userService.getAll({ ...filters, page, limit }),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -27,7 +27,7 @@ export const useCreateUser = () => {
     mutationFn: (userData: UserFormData) => userService.create(userData),
     onSuccess: () => {
       message.success('Utilisateur créé avec succès');
-      queryClient.invalidateQueries(['users']);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la création');
@@ -43,7 +43,7 @@ export const useUpdateUser = () => {
       userService.update(id, data),
     onSuccess: (_, variables) => {
       message.success('Utilisateur mis à jour avec succès');
-      queryClient.invalidateQueries(['users']);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries(['user', variables.id]);
     },
     onError: (error: any) => {
@@ -59,7 +59,7 @@ export const useDeleteUser = () => {
     mutationFn: (id: number) => userService.delete(id),
     onSuccess: () => {
       message.success('Utilisateur supprimé avec succès');
-      queryClient.invalidateQueries(['users']);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la suppression');
@@ -75,7 +75,7 @@ export const useToggleUserStatus = () => {
     onSuccess: (data, id) => {
       const newStatus = data.data.active ? 'activé' : 'désactivé';
       message.success(`Utilisateur ${newStatus} avec succès`);
-      queryClient.invalidateQueries(['users']);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries(['user', id]);
     },
     onError: (error: any) => {

@@ -77,7 +77,7 @@ const MobileTransactionsPage: React.FC = () => {
     queryKey: ['transactions', searchParams],
     queryFn: () =>
       api.get('/mobile-transactions', { params: searchParams }).then(res => res.data.data),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 
   // Fetch statistics
@@ -475,7 +475,7 @@ const MobileTransactionsPage: React.FC = () => {
         open={deleteModalVisible}
         onOk={confirmDelete}
         onCancel={() => setDeleteModalVisible(false)}
-        confirmLoading={deleteMutation.isLoading}
+        confirmLoading={deleteMutation.isPending}
         okText="Supprimer"
         okType="danger"
         cancelText="Annuler"

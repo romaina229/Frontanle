@@ -18,8 +18,8 @@ export const useUpdateProfile = () => {
     mutationFn: (data: any) => profilService.updateProfile(data),
     onSuccess: (response) => {
       message.success(response.message || 'Profil mis à jour avec succès');
-      queryClient.invalidateQueries(['profile']);
-      queryClient.invalidateQueries(['user-permissions']);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
@@ -46,7 +46,7 @@ export const useUpdateAvatar = () => {
     mutationFn: (avatar: File) => profilService.updateAvatar(avatar),
     onSuccess: (response) => {
       message.success(response.message || 'Photo de profil mise à jour');
-      queryClient.invalidateQueries(['profile']);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la mise à jour de la photo');
@@ -61,7 +61,7 @@ export const useDeleteAvatar = () => {
     mutationFn: () => profilService.deleteAvatar(),
     onSuccess: (response) => {
       message.success(response.message || 'Photo de profil supprimée');
-      queryClient.invalidateQueries(['profile']);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la suppression');
@@ -91,7 +91,7 @@ export const useTerminateSession = () => {
     mutationFn: (sessionId: string) => profilService.terminateSession(sessionId),
     onSuccess: (response) => {
       message.success(response.message || 'Session terminée');
-      queryClient.invalidateQueries(['active-sessions']);
+      queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la terminaison');
@@ -106,7 +106,7 @@ export const useTerminateOtherSessions = () => {
     mutationFn: () => profilService.terminateOtherSessions(),
     onSuccess: (response) => {
       message.success(response.message || 'Autres sessions terminées');
-      queryClient.invalidateQueries(['active-sessions']);
+      queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la terminaison');
@@ -128,7 +128,7 @@ export const useUpdateNotificationPreferences = () => {
     mutationFn: (preferences: any[]) => profilService.updateNotificationPreferences(preferences),
     onSuccess: (response) => {
       message.success(response.message || 'Préférences mises à jour');
-      queryClient.invalidateQueries(['notification-preferences']);
+      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
@@ -193,7 +193,7 @@ export const useSetupTwoFactor = () => {
   return useMutation({
     mutationFn: () => profilService.setupTwoFactor(),
     onSuccess: () => {
-      queryClient.invalidateQueries(['two-factor-status']);
+      queryClient.invalidateQueries({ queryKey: ['two-factor-status'] });
     },
   });
 };
@@ -205,7 +205,7 @@ export const useConfirmTwoFactor = () => {
     mutationFn: (code: string) => profilService.confirmTwoFactor(code),
     onSuccess: (response) => {
       message.success(response.message || '2FA activé avec succès');
-      queryClient.invalidateQueries(['two-factor-status']);
+      queryClient.invalidateQueries({ queryKey: ['two-factor-status'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Code invalide');
@@ -220,7 +220,7 @@ export const useDisableTwoFactor = () => {
     mutationFn: () => profilService.disableTwoFactor(),
     onSuccess: (response) => {
       message.success(response.message || '2FA désactivé avec succès');
-      queryClient.invalidateQueries(['two-factor-status']);
+      queryClient.invalidateQueries({ queryKey: ['two-factor-status'] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la désactivation');

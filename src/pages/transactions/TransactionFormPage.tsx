@@ -88,7 +88,7 @@ const TransactionFormPage: React.FC = () => {
         ? 'Transaction mise à jour avec succès' 
         : 'Transaction créée avec succès';
       message.success(messageText);
-      queryClient.invalidateQueries(['transactions']);
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       navigate('/transactions');
     },
     onError: (error: any) => {
@@ -492,7 +492,7 @@ const TransactionFormPage: React.FC = () => {
                       type="primary"
                       htmlType="submit"
                       icon={<SaveOutlined />}
-                      loading={mutation.isLoading || isSubmitting}
+                      loading={mutation.isPending || isSubmitting}
                       block
                       size="large"
                     >

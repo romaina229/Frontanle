@@ -1,5 +1,14 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { Sale, CreateSaleDto, UpdateSaleDto } from '../../types/sale';
+
+interface Sale {
+  id: string;
+}
+
+interface CreateSaleDto {
+}
+
+interface UpdateSaleDto {
+}
 
 interface SalesResponse {
   sales: Sale[];
