@@ -1,32 +1,32 @@
-# Étape 1: Build
+# Étape 1 : Construction de l'application
 FROM node:20-alpine AS builder
 
-# Définir le répertoire de travail
 WORKDIR /app
 
 # Copier les fichiers de dépendances
-COPY package.json package-lock.json ./
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY tsconfig.node.json ./
 
 # Installer les dépendances
 RUN npm ci --legacy-peer-deps
 
-# Copier tous les fichiers du projet
+# Copier le reste des fichiers
 COPY . .
 
 # Construire l'application
 RUN npm run build
 
-# Étape 2: Production avec Nginx
+# Étape 2 : Serveur de production
 FROM nginx:alpine
 
-# Copier les fichiers buildés depuis l'étape builder
+# Copier les fichiers construits
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copier la configuration Nginx personnalisée
+# Copier la configuration nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exposer le port 80
+# Exposer le port
 EXPOSE 80
 
-# Démarrer Nginx
 CMD ["nginx", "-g", "daemon off;"]
