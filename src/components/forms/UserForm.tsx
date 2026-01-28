@@ -132,7 +132,7 @@ const UserForm: React.FC<UserFormProps> = ({
         <Input.TextArea 
           rows={2}
           placeholder="Adresse complète"
-          prefix={<HomeOutlined />}
+          //prefix={<HomeOutlined />}
         />
       </Form.Item>
 
@@ -189,7 +189,7 @@ const UserForm: React.FC<UserFormProps> = ({
         <Upload
           listType="picture"
           maxCount={1}
-          beforeUpload={() => false} // Empêche l'upload automatique
+          beforeUpload={() => true} // Empêche l'upload automatique
           accept="image/*"
         >
           <Button icon={<UploadOutlined />}>

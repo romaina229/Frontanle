@@ -1,6 +1,6 @@
 // src/hooks/useSales.ts 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { saleService } from '../services/saleService';
+import saleService from '../services/saleService';
 import { message } from 'antd';
 
 export const useSales = (filters?: any, page = 1, limit = 10) => {

@@ -1,5 +1,8 @@
 // src/pages/admin/UserDetailPage.tsx
 import React, { useState } from 'react';
+import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Switch } from '@mui/material';
+import { Meta } from 'antd/es/list/Item';
 import { 
   Card, 
   Row, 
@@ -43,8 +46,8 @@ import {
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser, useToggleUserStatus, useResetPassword } from '../../hooks/useUsers';
-import { useUserSales } from '../../hooks/useSales';
-import { formatDate, formatCurrency } from '../../utils/format';
+import { useUserSales } from '../../hooks/useUserSales';
+import { formatDate, formatCurrency } from '../../utils/formatters';
 import { USER_ROLES } from '../../types';
 
 const { Title, Text } = Typography;
@@ -509,9 +512,9 @@ const UserDetailPage: React.FC = () => {
           >
             <Select>
               {Object.entries(USER_ROLES).map(([value, label]) => (
-                <Select.Option key={value} value={value}>
+                <Select key={value} value={value}>
                   {label}
-                </Select.Option>
+                </Select>
               ))}
             </Select>
           </Form.Item>
@@ -521,7 +524,7 @@ const UserDetailPage: React.FC = () => {
             label="Statut"
             valuePropName="checked"
           >
-            <Switch checkedChildren="Actif" unCheckedChildren="Inactif" />
+            {/*<Switch checkedChildren="Actif" unCheckedChildren="Inactif" />*/}
           </Form.Item>
           
           <Form.Item style={{ textAlign: 'right' }}>

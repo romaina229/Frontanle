@@ -127,11 +127,11 @@ export const useImportData = () => {
       message.success(response.message || 'Import réussi');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
       // Invalider les caches selon le type importé
-      if (type.includes('user')) queryClient.invalidateQueries({ queryKey: ['users'] });
-      if (type.includes('product')) queryClient.invalidateQueries({ queryKey: ['products'] });
-      if (type.includes('sale')) queryClient.invalidateQueries({ queryKey: ['sales'] });
-      if (type.includes('client')) queryClient.invalidateQueries({ queryKey: ['clients'] });
-    },
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+          },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de l\'import');
     },

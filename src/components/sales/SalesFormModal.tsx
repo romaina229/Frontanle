@@ -25,7 +25,7 @@ import {
 import { Close as CloseIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { useCreateSaleMutation, useUpdateSaleMutation } from '../../services/api';
+import { useCreateSaleMutation, useUpdateSaleMutation } from 'src/components/sales/SalesFormModal';
 import type { Sale, CreateSaleDto, UpdateSaleDto } from '../../types/sale';
 
 interface SalesFormModalProps {
