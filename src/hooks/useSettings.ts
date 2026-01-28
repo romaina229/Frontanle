@@ -1,6 +1,6 @@
 // src/hooks/useSettings.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { settingsService } from '../services/settings.service';
+import { settingsService } from '../services/settingsService';
 import { message, notification } from 'antd';
 
 export const useSettings = () => {
