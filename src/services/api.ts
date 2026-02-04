@@ -3,7 +3,7 @@ import { store } from '../store';
 import { logout } from '../store/slices/authSlice';
 
 // Configuration API URL
-const API_URL = 'http://localhost:8000/api/v1';
+const API_URL = 'https://aquagestion-backend.onrender.com/api/v1';
 
 const api = axios.create({
   baseURL: API_URL,
