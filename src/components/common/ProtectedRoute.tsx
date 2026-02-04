@@ -6,6 +6,7 @@ import { selectIsAuthenticated, selectAuthLoading } from '../../store/slices/aut
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  allowedRoles?: string[];
   requiredRole?: 'admin' | 'gestionnaire' | 'caissier';
   requiredPermissions?: string[];
 }

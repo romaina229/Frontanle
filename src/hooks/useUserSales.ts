@@ -14,7 +14,7 @@ export const useSales = (filters?: any, page = 1, limit = 10) => {
 export const useSale = (id?: number) => {
   return useQuery({
     queryKey: ['sale', id],
-    queryFn: () => saleService.getById(id!),
+    queryFn: () => saleService.getById(String(id!)),
     enabled: !!id,
   });
 };
@@ -47,11 +47,11 @@ export const useUpdateSale = () => {
   
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => 
-      saleService.update(id, data),
+      saleService.update(String(id), data),
     onSuccess: (_, variables) => {
       message.success('Vente mise à jour avec succès');
       queryClient.invalidateQueries({ queryKey: ['sales'] });
-      queryClient.invalidateQueries(['sale', variables.id]);
+      queryClient.invalidateQueries({ queryKey: ['sale', variables.id] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
@@ -78,7 +78,7 @@ export const useGenerateInvoice = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: number) => saleService.generateInvoice(id),
+    mutationFn: (id: number) => saleService.generateInvoice(String(id)),
     onSuccess: () => {
       message.success('Facture générée avec succès');
       queryClient.invalidateQueries({ queryKey: ['sales'] });

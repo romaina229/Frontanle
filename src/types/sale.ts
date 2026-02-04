@@ -1,30 +1,49 @@
+// src/types/sale.ts
 export interface Sale {
-  id: string;
+  id: number;
   reference: string;
   customerId: string;
-  customerName: string;
-  saleDate: string;
   totalAmount: number;
-  taxAmount: number;
-  discountAmount: number;
-  netAmount: number;
-  status: 'pending' | 'completed' | 'shipped' | 'cancelled';
-  paymentMethod: 'cash' | 'card' | 'transfer' | 'check' | 'mobile';
-  paymentStatus: 'pending' | 'paid' | 'partial' | 'overdue';
+  taxAmount?: number;
+  discountAmount?: number;
+  paymentMethod: string;
+  paymentReference?: string;
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  status: 'completed' | 'pending' | 'cancelled';
+  items: SaleItem[];
+  client?: {
+    id: number;
+    name: string;
+    telephone: string;
+    email?: string;
+  };
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  invoice?: {
+    id: number;
+    invoice_number: string;
+    invoice_date: string;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SaleItem {
-  id: string;
-  saleId: string;
-  productId: string;
+  id: number;
+  product_id: string;
+  product?: {
+    id: number;
+    name: string;
+    unit?: string;
+  };
   productName: string;
   quantity: number;
   unitPrice: number;
-  totalPrice: number;
-  discount?: number;
+  discount: number;
+  total: number;
 }
 
 export interface CreateSaleDto {
@@ -33,15 +52,10 @@ export interface CreateSaleDto {
     productId: string;
     quantity: number;
     unitPrice: number;
-    discount?: number;
+    discount: number;
   }>;
   paymentMethod: string;
   notes?: string;
 }
 
-export interface UpdateSaleDto {
-  status?: string;
-  paymentStatus?: string;
-  notes?: string;
-}
-
+export type UpdateSaleDto = Partial<CreateSaleDto>;

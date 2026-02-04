@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, './src'), assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.svg'],
     }
   },
   server: {
@@ -18,5 +18,5 @@ export default defineConfig({
       }
     }
   }
-   assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.svg'],
+   
 })

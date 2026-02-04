@@ -24,7 +24,7 @@ const LogoutPage: React.FC = () => {
         // Continue même si l'API échoue
       } finally {
         // Nettoyer l'état Redux
-        dispatch(logout());
+        dispatch(logout() as any);
         
         // Nettoyer le localStorage
         localStorage.removeItem('token');

@@ -361,22 +361,22 @@ const DashboardPage: React.FC = () => {
           <StatCard
             title="Chiffre d'Affaires"
             value={dashboardStats?.total_revenue || 0}
-            /*prefix="FCFA"*/
+            prefix="FCFA"
             icon={<DollarCircleOutlined />}
             color="#1890ff"
-            /*trend={12.5}*/
-            loading={statsLoading}
-            error={!!statsError}
+            trend={12.5}
+            /*loading={statsLoading}*/
+            /*error={!!statsError}*/
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
             title="Ventes Aujourd'hui"
             value={dashboardStats?.today_sales || 0}
-            /*prefix="FCFA"*/
+            prefix="FCFA"
             icon={<ShoppingCartOutlined />}
             color="#52c41a"
-            /*trend={8.3}*/
+            trend={8.3}
             /*loading={statsLoading}*/
             /*error={!!statsError}*/
           />
@@ -387,9 +387,9 @@ const DashboardPage: React.FC = () => {
             value={lowStock.length || dashboardStats?.low_stock_count || 0}
             icon={<AlertOutlined />}
             color="#faad14"
-           /* trend={-3.2}*/
-            loading={stockLoading}
-            error={!!stockError}
+            trend={-3.2}
+            /*loading={stockLoading}
+            error={!!stockError}*/
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -398,9 +398,9 @@ const DashboardPage: React.FC = () => {
             value={dashboardStats?.total_products || 0}
             icon={<StockOutlined />}
             color="#722ed1"
-           /* trend={15.7}*/
-            loading={statsLoading}
-            error={!!statsError}
+            trend={15.7}
+            /*loading={statsLoading}
+            error={!!statsError}*/
           />
         </Col>
       </Row>

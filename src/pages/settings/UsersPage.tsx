@@ -152,8 +152,8 @@ const UsersPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await userService.getAll();
-      const data = response.data?.data || response.data;
-      setUsers(Array.isArray(data) ? data : []);
+      const data = response?.data || response;
+      //setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
       setUsers([]);
@@ -171,7 +171,7 @@ const UsersPage: React.FC = () => {
 
   const toggleUserStatus = async (id: number, actif: boolean) => {
     try {
-      await userService.toggleStatus(id, actif);
+      await userService.toggleStatus(id);
       message.success(`Utilisateur ${actif ? 'activé' : 'désactivé'}`);
       fetchUsers();
     } catch (error) {
@@ -212,7 +212,11 @@ const UsersPage: React.FC = () => {
       content: 'Un nouveau mot de passe temporaire sera envoyé par email.',
       onOk: async () => {
         try {
-          await userService.resetPassword(userId);
+          const newPassword = 'Temp123!';  
+          await userService.resetPassword(userId, {
+            new_password: newPassword,
+            new_password_confirmation: newPassword
+          });
           message.success('Mot de passe réinitialisé et envoyé par email');
         } catch (error) {
           message.error('Erreur lors de la réinitialisation');

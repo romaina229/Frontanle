@@ -18,8 +18,8 @@ const AdminRoutes: React.FC = () => {
 
 <Route path="/settings" element={
   <ProtectedRoute allowedRoles={['admin']}>
-      <SettingsPage />
-    </ProtectedRoute>
+    <SettingsPage />
+  </ProtectedRoute>
 } />
 
 export default AdminRoutes;

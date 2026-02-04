@@ -96,17 +96,16 @@ const Footer: React.FC = () => {
                 { name: 'Paramètres', path: '/settings' }
               ].map((link, index) => (
                 <li key={index} style={{ marginBottom: 8 }}>
-                  <a 
-                    href={link.path} 
-                    style={{ 
-                      color: 'rgba(255, 255, 255, 0.65)',
-                      textDecoration: 'none',
-                      transition: 'color 0.3s',
-                      ':hover': {
-                        color: '#1890ff'
-                      }
-                    }}
-                  >
+                <a 
+                  href={link.path} 
+                  style={{ 
+                    color: 'rgba(255, 255, 255, 0.65)',
+                    textDecoration: 'none',
+                    transition: 'color 0.3s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#1890ff'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)'}
+                >
                     • {link.name}
                   </a>
                 </li>

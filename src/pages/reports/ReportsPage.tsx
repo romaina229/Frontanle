@@ -1,8 +1,8 @@
 // src/pages/ReportsPage.tsx
 import React, { useState } from 'react';
-import { Card, Select, DatePicker, Button, Table, Row, Col, Statistic } from 'antd';
+import { Card, Select, DatePicker, Button, Table, Row, Col, Statistic, message } from 'antd';
 import { DownloadOutlined, LineChartOutlined } from '@ant-design/icons';
-import { reportService } from '../../services';
+import reportService from '../../services/reportService'; // Corrigez le chemin
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -10,9 +10,13 @@ const { Option } = Select;
 
 const ReportsPage: React.FC = () => {
   const [reportType, setReportType] = useState('sales');
-  const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs().endOf('month')]);
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
+  dayjs().startOf('month'), 
+  dayjs().endOf('month')
+]);
   const [data, setData] = useState([]);
   const [summary, setSummary] = useState<any>({});
+  const [loading, setLoading] = useState(false);
 
   const reportTypes = [
     { value: 'sales', label: 'Ventes', icon: '📊' },
@@ -32,27 +36,73 @@ const ReportsPage: React.FC = () => {
       { title: 'Quantité', dataIndex: 'quantite' },
       { title: 'Valeur', dataIndex: 'valeur' },
     ],
+    clients: [
+      { title: 'Client', dataIndex: 'nom' },
+      { title: 'Email', dataIndex: 'email' },
+      { title: 'Total Achats', dataIndex: 'total_achats' },
+    ],
+    transactions: [
+      { title: 'ID Transaction', dataIndex: 'id' },
+      { title: 'Date', dataIndex: 'date' },
+      { title: 'Montant', dataIndex: 'montant' },
+    ],
   };
 
   const generateReport = async () => {
     try {
-      const params = {
-        type: reportType,
-        date_debut: dateRange[0].format('YYYY-MM-DD'),
-        date_fin: dateRange[1].format('YYYY-MM-DD'),
-      };
+      setLoading(true);
       
-      const response = await reportService.generate(params);
-      setData(response.data.data);
+      const params = {
+        start_date: dateRange[0].format('YYYY-MM-DD'),
+        end_date: dateRange[1].format('YYYY-MM-DD'),
+      };
+
+      let response;
+      
+      // Appelez la méthode appropriée selon le type de rapport
+      switch (reportType) {
+        case 'sales':
+          response = await reportService.getSalesReport(params);
+          break;
+        case 'inventory':
+          // Pour l'inventaire, pas besoin de dates
+          response = await reportService.getInventoryReport();
+          break;
+        case 'clients':
+          // Si vous avez cette méthode
+          response = await reportService.getClientsReport(params);
+          break;
+        case 'transactions':
+          // Si vous avez cette méthode
+          response = await reportService.getTransactionsReport(params);
+          break;
+        default:
+          response = await reportService.getSalesReport(params);
+      }
+
+      // Déboguez la structure de réponse
+      console.log('Response:', response);
+      
+      // Ajustez selon la structure de votre API
+      // Par exemple si c'est response.data.results ou response.data.data
+      setData(response.data.data || response.data.results || response.data || []);
       setSummary(response.data.summary || {});
+      
+      message.success('Rapport généré avec succès');
     } catch (error) {
       console.error('Erreur:', error);
+      message.error('Erreur lors de la génération du rapport');
+    } finally {
+      setLoading(false);
     }
   };
 
   const exportReport = () => {
-    // Logique d'export
-    window.open(`/api/reports/export?type=${reportType}`, '_blank');
+    // Ajoutez les dates à l'export
+    window.open(
+      `/api/reports/export?type=${reportType}&start_date=${dateRange[0].format('YYYY-MM-DD')}&end_date=${dateRange[1].format('YYYY-MM-DD')}`,
+      '_blank'
+    );
   };
 
   return (
@@ -87,6 +137,7 @@ const ReportsPage: React.FC = () => {
               onClick={generateReport}
               icon={<LineChartOutlined />}
               style={{ width: '100%' }}
+              loading={loading}
             >
               Générer
             </Button>
@@ -123,7 +174,7 @@ const ReportsPage: React.FC = () => {
       {data.length > 0 && (
         <Card>
           <Table
-            columns={columns[reportType] || []}
+            columns={columns[reportType] || columns.sales}
             dataSource={data}
             rowKey="id"
             pagination={{ pageSize: 10 }}

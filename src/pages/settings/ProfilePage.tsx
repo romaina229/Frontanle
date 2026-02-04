@@ -29,7 +29,7 @@ const ProfilePage: React.FC = () => {
   const fetchProfile = async () => {
     try {
       const response = await profilService.getProfile();
-      const profileData = response.data?.data || response.data;
+      const profileData = response?.data || response;
       setProfile(profileData);
       form.setFieldsValue(profileData);
     } catch (error: any) {

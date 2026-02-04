@@ -40,7 +40,7 @@ const LoginPage: React.FC = () => {
 
   const onFinish = async (values: any) => {
     try {
-      await dispatch(login(values)).unwrap();
+      await dispatch(login(values) as any).unwrap();
       toast.success('Connexion réussie !');
       navigate(from, { replace: true });
     } catch (error: any) {
@@ -50,7 +50,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleSocialLogin = (provider: string) => {
-    toast.info(`Connexion ${provider} en développement`);
+    toast(`Connexion ${provider} en développement`);
   };
 
   return (

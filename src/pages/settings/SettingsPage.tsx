@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Tabs, Form, Input, Button, Card, Switch, Select, App } from 'antd';
 import { SaveOutlined, LockOutlined, NotificationOutlined } from '@ant-design/icons';
 import { settingsService } from '../../services/settingsService';
+import { profilService } from '../../services/profileService';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -16,7 +17,7 @@ const SettingsPage: React.FC = () => {
   const handleProfileSubmit = async (values: any) => {
     setLoading(true);
     try {
-      await settingsService.updateProfile(values);
+      await profilService.updateProfile(values);
       message.success('Profil mis à jour');
     } catch (error) {
       message.error('Erreur');
@@ -28,7 +29,7 @@ const SettingsPage: React.FC = () => {
   const handleSettingsSubmit = async (values: any) => {
     setLoading(true);
     try {
-      await settingsService.updateAppSettings(values);
+      await settingsService.update(values);
       message.success('Paramètres sauvegardés');
     } catch (error) {
       message.error('Erreur');

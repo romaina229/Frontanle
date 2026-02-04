@@ -35,7 +35,7 @@ const AppHeader: React.FC<HeaderProps> = ({ collapsed, onToggleSidebar }) => {
   const handleLogout = async () => {
     try {
       await api.post('/logout');
-      dispatch(logout());
+      dispatch(logout() as any);
       navigate('/login');
       toast.success('Déconnexion réussie');
     } catch (error) {

@@ -348,7 +348,7 @@ const UserDetailPage: React.FC = () => {
               <Col span={12}>
                 <Statistic 
                   title="Total Ventes" 
-                  value={salesData?.meta?.total || 0}
+                  value={salesData?.data?.length || 0}
                   prefix={<ShoppingCartOutlined />}
                 />
               </Col>

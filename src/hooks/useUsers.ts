@@ -44,7 +44,7 @@ export const useUpdateUser = () => {
     onSuccess: (_, variables) => {
       message.success('Utilisateur mis à jour avec succès');
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries(['user', variables.id]);
+      queryClient.invalidateQueries({ queryKey: ['user', variables.id] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
@@ -76,7 +76,7 @@ export const useToggleUserStatus = () => {
       const newStatus = data.data.active ? 'activé' : 'désactivé';
       message.success(`Utilisateur ${newStatus} avec succès`);
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries(['user', id]);
+      queryClient.invalidateQueries({ queryKey: ['user', id] });
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || 'Erreur lors du changement de statut');

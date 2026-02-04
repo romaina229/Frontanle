@@ -8,9 +8,15 @@ interface StatCardProps {
   value: string | number;
   icon?: React.ReactNode;
   color?: string;
+  prefix?: string;
+  suffix?: string;
+  trend?: number;
+  loading?: boolean;  // ← AJOUTER
+  error?: boolean;    // ← AJOUTER
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, prefix, suffix,trend, loading = false, 
+  error = false }) => {
   return (
     <Card
       style={{
