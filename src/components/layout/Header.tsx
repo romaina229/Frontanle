@@ -17,7 +17,7 @@ import { toast } from 'react-hot-toast';
 import { logout } from '../../store/slices/authSlice';
 import { RootState } from '../../store';
 import api from '../../services/api';
-import logo = '/src/assets/images/logo.png';
+import logo from '../../assets/images/logo.png';
 
 
 const { Header: AntHeader } = Layout;
