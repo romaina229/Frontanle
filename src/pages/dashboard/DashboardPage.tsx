@@ -108,9 +108,28 @@ const DashboardPage: React.FC = () => {
   const [chartPeriod, setChartPeriod] = useState('7');
   const [salesChartData, setSalesChartData] = useState<any>(null);
   const [chartLoading, setChartLoading] = useState(false);
-  
+  //ajout nouveau pour le tableau vente recente
+  const formatCurrency = (value: number) => {
+  if (value === undefined || value === null) return '0 FCFA';
+    return new Intl.NumberFormat('fr-FR').format(value) + ' FCFA';
+  };
 
-  
+  const formatDate = (dateString: string, format: string = 'DD/MM/YYYY HH:mm') => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };//sa fin ici
+
   // Fetch dashboard data avec gestion robuste
   const { 
     data: dashboardStats = {
