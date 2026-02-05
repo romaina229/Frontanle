@@ -188,7 +188,7 @@ const ReportsPage: React.FC = () => {
       return;
     }
 
-    const exportUrl = `/api/reports/export?type=${reportType}&start_date=${dateRange[0].format('YYYY-MM-DD')}&end_date=${dateRange[1].format('YYYY-MM-DD')}`;
+    const exportUrl = `/api/v1/reports/export?type=${reportType}&start_date=${dateRange[0].format('YYYY-MM-DD')}&end_date=${dateRange[1].format('YYYY-MM-DD')}`;
     
     console.log('📥 Export rapport:', exportUrl);
     window.open(exportUrl, '_blank');

@@ -123,7 +123,7 @@ const ProfilePage: React.FC = () => {
       console.log('📸 Upload avatar');
       await profilService.updateProfile({ 
         avatar: file,
-        name: profile?.nom,
+        name: profile?.name,
         email: profile?.email
       });
       messageApi.success('Photo de profil mise à jour');
@@ -157,7 +157,7 @@ const ProfilePage: React.FC = () => {
                 <Col span={12}>
                   <Form.Item
                     label="Nom complet *"
-                    name="nom"
+                    name="name"
                     rules={[{ required: true, message: 'Nom requis' }]}
                   >
                     <Input prefix={<UserOutlined />} placeholder="Votre nom" />
@@ -184,7 +184,7 @@ const ProfilePage: React.FC = () => {
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item label="Adresse" name="adresse">
+                  <Form.Item label="Adresse" name="address">
                     <Input placeholder="Adresse" />
                   </Form.Item>
                 </Col>
