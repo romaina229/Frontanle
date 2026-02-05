@@ -1,3 +1,4 @@
+// src/pages/invoices/InvoicesPage.tsx - VERSION CORRIGÉE
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Card, Tag, DatePicker, Select, Row, Col, message } from 'antd';
 import { EyeOutlined, PrinterOutlined, DownloadOutlined } from '@ant-design/icons';
@@ -34,12 +35,12 @@ const InvoicesPage: React.FC = () => {
     {
       title: 'N° Facture',
       dataIndex: 'invoice_number',
-      render: (invoiceNumber: string) => invoiceNumber,
+      render: (invoiceNumber: string) => invoiceNumber || 'N/A',
     },
     {
       title: 'Date',
       dataIndex: 'invoice_date',
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '—',
     },
     {
       title: 'Client',
@@ -58,7 +59,9 @@ const InvoicesPage: React.FC = () => {
       title: 'Montant',
       dataIndex: 'total_amount',
       render: (amount: number) => (
-        <strong>{new Intl.NumberFormat('fr-FR').format(amount)} FCFA</strong>
+        <strong>
+          {amount ? new Intl.NumberFormat('fr-FR').format(amount) : '0'} FCFA
+        </strong>
       ),
     },
     {
@@ -72,7 +75,7 @@ const InvoicesPage: React.FC = () => {
           'overdue': 'orange',
           'cancelled': 'red',
         };
-        return <Tag color={colors[status] || 'default'}>{status}</Tag>;
+        return <Tag color={colors[status] || 'default'}>{status || 'draft'}</Tag>;
       },
     },
     {
@@ -107,7 +110,7 @@ const InvoicesPage: React.FC = () => {
 
   useEffect(() => {
     fetchInvoices();
-  }, [filters]);
+  }, []);
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -116,21 +119,58 @@ const InvoicesPage: React.FC = () => {
       
       if (filters.dateRange) {
         params.date_from = filters.dateRange[0].format('YYYY-MM-DD');
-        params.date_fin = filters.dateRange[1].format('YYYY-MM-DD');
+        params.date_to = filters.dateRange[1].format('YYYY-MM-DD');
       }
       
       if (filters.status) {
         params.status = filters.status;
       }
       
+      console.log('🔍 Chargement des factures avec params:', params);
       const response = await api.get('/invoices', { params });
-      const data = response.data.data || response.data;
-      // S'assurer que c'est bien un tableau
-      setInvoices(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Erreur:', error);
-      message.error('Erreur lors du chargement des factures');
-      setInvoices([]); // Initialiser avec un tableau vide en cas d'erreur
+      console.log('📦 Réponse factures:', response.data);
+      
+      // Extraction robuste des données
+      let invoicesData: Invoice[] = [];
+      
+      if (response.data) {
+        // Cas 1: response.data.data
+        if (response.data.data && Array.isArray(response.data.data)) {
+          invoicesData = response.data.data;
+          console.log('✅ Format: response.data.data');
+        }
+        // Cas 2: response.data direct
+        else if (Array.isArray(response.data)) {
+          invoicesData = response.data;
+          console.log('✅ Format: response.data (tableau)');
+        }
+        // Cas 3: success + data
+        else if (response.data.success && Array.isArray(response.data.data)) {
+          invoicesData = response.data.data;
+          console.log('✅ Format: success + data');
+        }
+        // Cas 4: Pagination Laravel
+        else if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
+          invoicesData = response.data.data.data;
+          console.log('✅ Format: pagination Laravel');
+        }
+        else {
+          console.warn('⚠️ Structure non reconnue:', response.data);
+        }
+      }
+      
+      console.log(`✅ ${invoicesData.length} factures chargées`);
+      setInvoices(invoicesData);
+      
+    } catch (error: any) {
+      console.error('❌ Erreur chargement factures:', error);
+      console.error('Détails:', error.response?.data);
+      
+      message.error(
+        error.response?.data?.message || 
+        'Erreur lors du chargement des factures'
+      );
+      setInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -138,24 +178,36 @@ const InvoicesPage: React.FC = () => {
 
   const handlePrintInvoice = async (id: number) => {
     try {
+      console.log('🖨️ Impression facture:', id);
       const response = await api.get(`/invoices/${id}/print`, {
         responseType: 'blob'
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data.data]));
+      // Vérifier si la réponse contient des données
+      const blob = response.data.data || response.data;
+      
+      const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `facture-${id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (error) {
-      message.error('Erreur lors du téléchargement de la facture');
+      window.URL.revokeObjectURL(url);
+      
+      message.success('Facture téléchargée');
+    } catch (error: any) {
+      console.error('❌ Erreur impression:', error);
+      message.error(
+        error.response?.data?.message || 
+        'Erreur lors du téléchargement de la facture'
+      );
     }
   };
 
   const handleDownloadInvoice = async (id: number) => {
     try {
+      console.log('⬇️ Téléchargement facture:', id);
       const response = await api.get(`/invoices/${id}/download`, {
         responseType: 'blob'
       });
@@ -167,8 +219,15 @@ const InvoicesPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (error) {
-      message.error('Erreur lors du téléchargement de la facture');
+      window.URL.revokeObjectURL(url);
+      
+      message.success('Facture téléchargée');
+    } catch (error: any) {
+      console.error('❌ Erreur téléchargement:', error);
+      message.error(
+        error.response?.data?.message || 
+        'Erreur lors du téléchargement de la facture'
+      );
     }
   };
 
@@ -184,7 +243,12 @@ const InvoicesPage: React.FC = () => {
           <Col span={8}>
             <RangePicker
               style={{ width: '100%' }}
-              onChange={(dates) => setFilters({ ...filters, dateRange: dates as [dayjs.Dayjs, dayjs.Dayjs] })}
+              placeholder={['Date début', 'Date fin']}
+              onChange={(dates) => setFilters({ 
+                ...filters, 
+                dateRange: dates as [dayjs.Dayjs, dayjs.Dayjs] 
+              })}
+              format="DD/MM/YYYY"
             />
           </Col>
           <Col span={8}>
@@ -202,7 +266,12 @@ const InvoicesPage: React.FC = () => {
             </Select>
           </Col>
           <Col span={8}>
-            <Button type="primary" onClick={fetchInvoices}>
+            <Button 
+              type="primary" 
+              onClick={fetchInvoices}
+              loading={loading}
+              block
+            >
               Filtrer
             </Button>
           </Col>
@@ -216,7 +285,14 @@ const InvoicesPage: React.FC = () => {
           dataSource={invoices}
           loading={loading}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
+          pagination={{ 
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `${total} facture${total > 1 ? 's' : ''}`
+          }}
+          locale={{
+            emptyText: loading ? 'Chargement...' : 'Aucune facture trouvée'
+          }}
         />
       </Card>
     </div>

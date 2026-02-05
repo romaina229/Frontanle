@@ -1,8 +1,11 @@
-// src/pages/ReportsPage.tsx
+// src/pages/reports/ReportsPage.tsx - VERSION CORRIGÉE
 import React, { useState } from 'react';
-import { Card, Select, DatePicker, Button, Table, Row, Col, Statistic, message } from 'antd';
+import { 
+  Card, Select, DatePicker, Button, Table, Row, Col, 
+  Statistic, message, Alert, Empty 
+} from 'antd';
 import { DownloadOutlined, LineChartOutlined } from '@ant-design/icons';
-import reportService from '../../services/reportService'; // Corrigez le chemin
+import reportService from '../../services/reportService';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -11,10 +14,10 @@ const { Option } = Select;
 const ReportsPage: React.FC = () => {
   const [reportType, setReportType] = useState('sales');
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
-  dayjs().startOf('month'), 
-  dayjs().endOf('month')
-]);
-  const [data, setData] = useState([]);
+    dayjs().startOf('month'), 
+    dayjs().endOf('month')
+  ]);
+  const [data, setData] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>({});
   const [loading, setLoading] = useState(false);
 
@@ -27,82 +30,168 @@ const ReportsPage: React.FC = () => {
 
   const columns: any = {
     sales: [
-      { title: 'Date', dataIndex: 'date' },
-      { title: 'Montant', dataIndex: 'montant' },
-      { title: 'Nb Ventes', dataIndex: 'count' },
+      { 
+        title: 'Date', 
+        dataIndex: 'date',
+        render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : '—'
+      },
+      { 
+        title: 'Montant', 
+        dataIndex: 'montant',
+        render: (val: number) => val ? `${new Intl.NumberFormat('fr-FR').format(val)} FCFA` : '0 FCFA'
+      },
+      { 
+        title: 'Nb Ventes', 
+        dataIndex: 'count',
+        render: (val: number) => val || 0
+      },
     ],
     inventory: [
       { title: 'Produit', dataIndex: 'produit' },
-      { title: 'Quantité', dataIndex: 'quantite' },
-      { title: 'Valeur', dataIndex: 'valeur' },
+      { 
+        title: 'Quantité', 
+        dataIndex: 'quantite',
+        render: (val: number) => val || 0
+      },
+      { 
+        title: 'Valeur', 
+        dataIndex: 'valeur',
+        render: (val: number) => val ? `${new Intl.NumberFormat('fr-FR').format(val)} FCFA` : '0 FCFA'
+      },
     ],
     clients: [
       { title: 'Client', dataIndex: 'nom' },
       { title: 'Email', dataIndex: 'email' },
-      { title: 'Total Achats', dataIndex: 'total_achats' },
+      { 
+        title: 'Total Achats', 
+        dataIndex: 'total_achats',
+        render: (val: number) => val ? `${new Intl.NumberFormat('fr-FR').format(val)} FCFA` : '0 FCFA'
+      },
     ],
     transactions: [
       { title: 'ID Transaction', dataIndex: 'id' },
-      { title: 'Date', dataIndex: 'date' },
-      { title: 'Montant', dataIndex: 'montant' },
+      { 
+        title: 'Date', 
+        dataIndex: 'date',
+        render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '—'
+      },
+      { 
+        title: 'Montant', 
+        dataIndex: 'montant',
+        render: (val: number) => val ? `${new Intl.NumberFormat('fr-FR').format(val)} FCFA` : '0 FCFA'
+      },
     ],
   };
 
   const generateReport = async () => {
+    if (!dateRange || !dateRange[0] || !dateRange[1]) {
+      message.warning('Veuillez sélectionner une période');
+      return;
+    }
+
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      
       const params = {
         start_date: dateRange[0].format('YYYY-MM-DD'),
         end_date: dateRange[1].format('YYYY-MM-DD'),
       };
 
+      console.log('📊 Génération rapport:', reportType, params);
+
       let response;
       
-      // Appelez la méthode appropriée selon le type de rapport
+      // Appeler la méthode appropriée selon le type de rapport
       switch (reportType) {
         case 'sales':
           response = await reportService.getSalesReport(params);
           break;
         case 'inventory':
-          // Pour l'inventaire, pas besoin de dates
           response = await reportService.getInventoryReport();
           break;
         case 'clients':
-          // Si vous avez cette méthode
-          response = await reportService.getClientsReport(params);
+          if (reportService.getClientsReport) {
+            response = await reportService.getClientsReport(params);
+          } else {
+            message.warning('Rapport clients non disponible');
+            return;
+          }
           break;
         case 'transactions':
-          // Si vous avez cette méthode
-          response = await reportService.getTransactionsReport(params);
+          if (reportService.getTransactionsReport) {
+            response = await reportService.getTransactionsReport(params);
+          } else {
+            message.warning('Rapport transactions non disponible');
+            return;
+          }
           break;
         default:
           response = await reportService.getSalesReport(params);
       }
 
-      // Déboguez la structure de réponse
-      console.log('Response:', response);
+      console.log('📦 Réponse rapport:', response);
       
-      // Ajustez selon la structure de votre API
-      // Par exemple si c'est response.data.results ou response.data.data
-      setData(response.data.data || response.data.results || response.data || []);
-      setSummary(response.data.summary || {});
+      // Extraction robuste des données
+      let reportData: any[] = [];
+      let reportSummary: any = {};
+
+      if (response?.data) {
+        // Cas 1: response.data.data
+        if (response.data.data && Array.isArray(response.data.data)) {
+          reportData = response.data.data;
+        }
+        // Cas 2: response.data.results
+        else if (response.data.results && Array.isArray(response.data.results)) {
+          reportData = response.data.results;
+        }
+        // Cas 3: response.data direct
+        else if (Array.isArray(response.data)) {
+          reportData = response.data;
+        }
+        
+        // Extraire le summary
+        if (response.data.summary) {
+          reportSummary = response.data.summary;
+        } else if (response.data.stats) {
+          reportSummary = response.data.stats;
+        }
+      }
       
-      message.success('Rapport généré avec succès');
-    } catch (error) {
-      console.error('Erreur:', error);
-      message.error('Erreur lors de la génération du rapport');
+      console.log(`✅ Rapport généré: ${reportData.length} lignes`);
+      setData(reportData);
+      setSummary(reportSummary);
+      
+      if (reportData.length === 0) {
+        message.info('Aucune donnée pour cette période');
+      } else {
+        message.success('Rapport généré avec succès');
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Erreur génération rapport:', error);
+      console.error('Détails:', error.response?.data);
+      
+      message.error(
+        error.response?.data?.message || 
+        'Erreur lors de la génération du rapport'
+      );
+      setData([]);
+      setSummary({});
     } finally {
       setLoading(false);
     }
   };
 
   const exportReport = () => {
-    // Ajoutez les dates à l'export
-    window.open(
-      `/api/reports/export?type=${reportType}&start_date=${dateRange[0].format('YYYY-MM-DD')}&end_date=${dateRange[1].format('YYYY-MM-DD')}`,
-      '_blank'
-    );
+    if (!dateRange || !dateRange[0] || !dateRange[1]) {
+      message.warning('Veuillez générer un rapport avant de l\'exporter');
+      return;
+    }
+
+    const exportUrl = `/api/reports/export?type=${reportType}&start_date=${dateRange[0].format('YYYY-MM-DD')}&end_date=${dateRange[1].format('YYYY-MM-DD')}`;
+    
+    console.log('📥 Export rapport:', exportUrl);
+    window.open(exportUrl, '_blank');
   };
 
   return (
@@ -111,7 +200,7 @@ const ReportsPage: React.FC = () => {
       
       <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
-          <Col span={6}>
+          <Col xs={24} sm={6}>
             <Select
               value={reportType}
               onChange={setReportType}
@@ -124,14 +213,20 @@ const ReportsPage: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col span={12}>
+          <Col xs={24} sm={10}>
             <RangePicker
               style={{ width: '100%' }}
               value={dateRange}
-              onChange={setDateRange}
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs]);
+                }
+              }}
+              format="DD/MM/YYYY"
+              placeholder={['Date début', 'Date fin']}
             />
           </Col>
-          <Col span={3}>
+          <Col xs={24} sm={4}>
             <Button
               type="primary"
               onClick={generateReport}
@@ -142,11 +237,12 @@ const ReportsPage: React.FC = () => {
               Générer
             </Button>
           </Col>
-          <Col span={3}>
+          <Col xs={24} sm={4}>
             <Button
               onClick={exportReport}
               icon={<DownloadOutlined />}
               style={{ width: '100%' }}
+              disabled={data.length === 0}
             >
               Exporter
             </Button>
@@ -157,13 +253,13 @@ const ReportsPage: React.FC = () => {
       {Object.keys(summary).length > 0 && (
         <Row gutter={16} style={{ marginBottom: 20 }}>
           {Object.entries(summary).map(([key, value]: [string, any]) => (
-            <Col span={6} key={key}>
+            <Col xs={24} sm={12} md={6} key={key}>
               <Card>
                 <Statistic
-                  title={key}
+                  title={key.replace(/_/g, ' ').toUpperCase()}
                   value={value}
                   precision={0}
-                  suffix={key.includes('montant') ? 'FCFA' : ''}
+                  suffix={key.includes('montant') || key.includes('total') ? 'FCFA' : ''}
                 />
               </Card>
             </Col>
@@ -171,16 +267,31 @@ const ReportsPage: React.FC = () => {
         </Row>
       )}
 
-      {data.length > 0 && (
-        <Card>
+      <Card>
+        {data.length > 0 ? (
           <Table
             columns={columns[reportType] || columns.sales}
             dataSource={data}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
+            rowKey={(record, index) => record.id || `row-${index}`}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `${total} ligne${total > 1 ? 's' : ''}`
+            }}
+            loading={loading}
           />
-        </Card>
-      )}
+        ) : (
+          <Empty 
+            description={
+              loading 
+                ? "Chargement en cours..." 
+                : "Sélectionnez une période et cliquez sur 'Générer' pour afficher le rapport"
+            }
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ padding: '60px 0' }}
+          />
+        )}
+      </Card>
     </div>
   );
 };

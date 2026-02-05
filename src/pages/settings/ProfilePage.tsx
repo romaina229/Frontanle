@@ -1,6 +1,6 @@
-// src/pages/settings/ProfilePage.tsx
+// src/pages/settings/ProfilePage.tsx - VERSION CORRIGÉE
 import React, { useState, useEffect } from 'react';
-import { Tag } from 'antd';
+import { Tag, Spin } from 'antd';
 import { 
   Card, Form, Input, Button, Avatar, Row, Col, 
   Divider, message, Upload, Tabs, Modal, App 
@@ -16,9 +16,10 @@ const { TextArea } = Input;
 
 const ProfilePage: React.FC = () => {
   const [form] = Form.useForm();
-  const { message } = App.useApp();
+  const { message: messageApi } = App.useApp();
   const [passwordForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
 
@@ -27,31 +28,69 @@ const ProfilePage: React.FC = () => {
   }, []);
 
   const fetchProfile = async () => {
+    setPageLoading(true);
     try {
+      console.log('🔍 Chargement du profil...');
       const response = await profilService.getProfile();
-      const profileData = response?.data || response;
-      setProfile(profileData);
-      form.setFieldsValue(profileData);
-    } catch (error: any) {
-      console.error('Erreur lors du chargement du profil:', error);
-      if (error.response?.status === 404) {
-        message.error('Profil non trouvé');
-      } else if (error.response?.status === 422) {
-        message.error('Données de profil invalides');
-      } else {
-        message.error('Erreur lors du chargement du profil');
+      console.log('📦 Réponse profil:', response);
+      
+      // Extraction robuste des données
+      let profileData = null;
+      
+      if (response) {
+        if (response.data) {
+          profileData = response.data;
+        } else {
+          profileData = response;
+        }
       }
+      
+      if (profileData) {
+        console.log('✅ Profil chargé:', profileData);
+        setProfile(profileData);
+        form.setFieldsValue(profileData);
+      } else {
+        console.warn('⚠️ Aucune donnée de profil reçue');
+        messageApi.warning('Impossible de charger le profil');
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors du chargement du profil:', error);
+      console.error('Détails:', error.response?.data);
+      
+      // Gestion des erreurs spécifiques
+      if (error.response?.status === 404) {
+        messageApi.error('Profil non trouvé. Contactez l\'administrateur.');
+      } else if (error.response?.status === 401) {
+        messageApi.error('Session expirée. Veuillez vous reconnecter.');
+      } else if (error.response?.status === 422) {
+        messageApi.error('Données de profil invalides.');
+      } else if (error.response?.status === 500) {
+        messageApi.error('Erreur serveur. Contactez l\'administrateur.');
+      } else {
+        messageApi.error(
+          error.response?.data?.message || 
+          'Erreur lors du chargement du profil'
+        );
+      }
+    } finally {
+      setPageLoading(false);
     }
   };
 
   const handleProfileUpdate = async (values: any) => {
     setLoading(true);
     try {
+      console.log('💾 Mise à jour du profil:', values);
       await profilService.updateProfile(values);
-      message.success('Profil mis à jour avec succès');
-      fetchProfile(); // Recharger les données
-    } catch (error) {
-      message.error('Erreur lors de la mise à jour');
+      messageApi.success('Profil mis à jour avec succès');
+      await fetchProfile(); // Recharger les données
+    } catch (error: any) {
+      console.error('❌ Erreur mise à jour profil:', error);
+      messageApi.error(
+        error.response?.data?.message || 
+        'Erreur lors de la mise à jour'
+      );
     } finally {
       setLoading(false);
     }
@@ -60,11 +99,16 @@ const ProfilePage: React.FC = () => {
   const handlePasswordChange = async (values: any) => {
     setLoading(true);
     try {
+      console.log('🔐 Changement de mot de passe');
       await profilService.changePassword(values);
-      message.success('Mot de passe modifié avec succès');
+      messageApi.success('Mot de passe modifié avec succès');
       passwordForm.resetFields();
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Erreur lors du changement de mot de passe');
+      console.error('❌ Erreur changement mot de passe:', error);
+      messageApi.error(
+        error.response?.data?.message || 
+        'Erreur lors du changement de mot de passe'
+      );
     } finally {
       setLoading(false);
     }
@@ -76,18 +120,25 @@ const ProfilePage: React.FC = () => {
     formData.append('avatar', file);
 
     try {
+      console.log('📸 Upload avatar');
       await profilService.updateProfile({ 
         avatar: file,
         name: profile?.nom,
         email: profile?.email
       });
-      message.success('Photo de profil mise à jour');
-      fetchProfile();
-    } catch (error) {
-      message.error('Erreur lors du téléchargement de la photo');
+      messageApi.success('Photo de profil mise à jour');
+      await fetchProfile();
+    } catch (error: any) {
+      console.error('❌ Erreur upload avatar:', error);
+      messageApi.error(
+        error.response?.data?.message || 
+        'Erreur lors du téléchargement de la photo'
+      );
     } finally {
       setAvatarLoading(false);
     }
+    
+    return false; // Empêcher l'upload automatique
   };
 
   const tabItems = [
@@ -163,14 +214,19 @@ const ProfilePage: React.FC = () => {
               <Col span={12}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ color: '#999', fontSize: 12 }}>Rôle</div>
-                  <div style={{ fontWeight: 'bold' }}>{profile?.role?.toUpperCase()}</div>
+                  <div style={{ fontWeight: 'bold' }}>
+                    {profile?.role?.toUpperCase() || 'NON DÉFINI'}
+                  </div>
                 </div>
               </Col>
               <Col span={12}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ color: '#999', fontSize: 12 }}>Membre depuis</div>
                   <div style={{ fontWeight: 'bold' }}>
-                    {profile?.created_at ? dayjs(profile.created_at).format('DD/MM/YYYY') : '-'}
+                    {profile?.created_at 
+                      ? dayjs(profile.created_at).format('DD/MM/YYYY') 
+                      : '—'
+                    }
                   </div>
                 </div>
               </Col>
@@ -279,9 +335,9 @@ const ProfilePage: React.FC = () => {
                   onOk: async () => {
                     try {
                       await Promise.resolve();
-                      message.success('Toutes les autres sessions ont été déconnectées');
+                      messageApi.success('Toutes les autres sessions ont été déconnectées');
                     } catch (error) {
-                      message.error('Erreur lors de la déconnexion');
+                      messageApi.error('Erreur lors de la déconnexion');
                     }
                   },
                 });
@@ -299,11 +355,47 @@ const ProfilePage: React.FC = () => {
       children: (
         <Card>
           <h3>Préférences de notification</h3>
-          <p>Configuration des notifications...</p>
+          <p style={{ color: '#666' }}>
+            Configuration des notifications (fonctionnalité en développement)
+          </p>
         </Card>
       )
     }
   ];
+
+  // Affichage pendant le chargement initial
+  if (pageLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '60vh' 
+      }}>
+        <Spin size="large" tip="Chargement du profil..." />
+      </div>
+    );
+  }
+
+  // Affichage si aucun profil n'est chargé
+  if (!profile) {
+    return (
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px' }}>
+        <Card>
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <UserOutlined style={{ fontSize: 48, color: '#ccc' }} />
+            <h3 style={{ marginTop: 16 }}>Profil non disponible</h3>
+            <p style={{ color: '#999' }}>
+              Impossible de charger les informations du profil.
+            </p>
+            <Button type="primary" onClick={fetchProfile}>
+              Réessayer
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -323,7 +415,7 @@ const ProfilePage: React.FC = () => {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
             }}
           >
-            {profile?.nom?.substring(0, 2).toUpperCase()}
+            {profile?.nom?.substring(0, 2).toUpperCase() || 'U'}
           </Avatar>
           <div style={{ marginTop: 12 }}>
             <Button 
@@ -335,10 +427,14 @@ const ProfilePage: React.FC = () => {
             </Button>
           </div>
         </Upload>
-        <h2 style={{ marginTop: 16, marginBottom: 4 }}>{profile?.nom}</h2>
-        <p style={{ color: '#666', marginBottom: 8 }}>{profile?.email}</p>
+        <h2 style={{ marginTop: 16, marginBottom: 4 }}>
+          {profile?.nom || 'Utilisateur'}
+        </h2>
+        <p style={{ color: '#666', marginBottom: 8 }}>
+          {profile?.email || 'email@example.com'}
+        </p>
         <Tag color="blue" style={{ textTransform: 'uppercase' }}>
-          {profile?.role}
+          {profile?.role || 'UTILISATEUR'}
         </Tag>
       </div>
 

@@ -17,7 +17,7 @@ import { toast } from 'react-hot-toast';
 import { logout } from '../../store/slices/authSlice';
 import { RootState } from '../../store';
 import api from '../../services/api';
-const logo = '../../assets/images/logo.png';
+const logo = '../../../public/images/logo.png';
 
 
 const { Header: AntHeader } = Layout;
@@ -104,7 +104,7 @@ const AppHeader: React.FC<HeaderProps> = ({ collapsed, onToggleSidebar }) => {
         
         {/* Logo + Nom de l'application */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-           <img src={logo} alt="Logo AquaGestion" style={{ maxHeight: '50px', objectFit: 'contain' }} />
+           <img src='/public/images/logo.png' alt="Logo AquaGestion" style={{ maxHeight: '50px', objectFit: 'contain' }} />
           </div>
           <div>
             <h1 style={{ 

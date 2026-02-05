@@ -1,3 +1,4 @@
+// src/pages/clients/ClientsPage.tsx - VERSION CORRIGÉE
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Input, Space, Card, Statistic, Row, Col, 
@@ -51,10 +52,10 @@ const ClientsPage: React.FC = () => {
             style={{ backgroundColor: '#1890ff', marginRight: 10 }}
             icon={<UserOutlined />}
           >
-            {text.charAt(0).toUpperCase()}
+            {text?.charAt(0)?.toUpperCase() || 'C'}
           </Avatar>
           <div>
-            <strong>{text}</strong>
+            <strong>{text || 'Non renseigné'}</strong>
             {record.email && (
               <div style={{ fontSize: 12, color: '#666' }}>{record.email}</div>
             )}
@@ -65,6 +66,7 @@ const ClientsPage: React.FC = () => {
     {
       title: 'Téléphone',
       dataIndex: 'telephone',
+      render: (text: string) => text || '—'
     },
     {
       title: 'Email',
@@ -118,33 +120,54 @@ const ClientsPage: React.FC = () => {
         params.search = searchText;
       }
       
+      console.log('🔍 Chargement des clients...');
       const response = await api.get('/clients', { params });
+      console.log('📦 Réponse API clients:', response.data);
       
-      // CORRECTION CRITIQUE : S'assurer que les données sont bien un tableau
+      // Extraction robuste des données
       let clientsData: Client[] = [];
       
-      // Essayer différentes structures de réponse
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        // Structure Laravel paginée typique
-        clientsData = response.data.data;
-      } else if (response.data && Array.isArray(response.data)) {
-        // Structure tableau direct
-        clientsData = response.data;
-      } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        // Structure avec success flag
-        clientsData = response.data.data;
-      } else {
-        // Si aucune correspondance, tableau vide
-        console.warn('Structure de réponse inattendue:', response.data);
-        clientsData = [];
+      if (response.data) {
+        // Cas 1: response.data.data (structure Laravel paginée ou wrappée)
+        if (response.data.data && Array.isArray(response.data.data)) {
+          clientsData = response.data.data;
+          console.log('✅ Format: response.data.data (tableau)');
+        }
+        // Cas 2: response.data est directement un tableau
+        else if (Array.isArray(response.data)) {
+          clientsData = response.data;
+          console.log('✅ Format: response.data (tableau direct)');
+        }
+        // Cas 3: response.data.success avec data
+        else if (response.data.success && response.data.data) {
+          if (Array.isArray(response.data.data)) {
+            clientsData = response.data.data;
+            console.log('✅ Format: response.data.success + data');
+          }
+        }
+        // Cas 4: Pagination Laravel
+        else if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
+          clientsData = response.data.data.data;
+          console.log('✅ Format: pagination Laravel');
+        }
+        else {
+          console.warn('⚠️ Structure de réponse non reconnue:', response.data);
+          clientsData = [];
+        }
       }
       
-      console.log('Clients chargés:', clientsData.length);
+      console.log(`✅ ${clientsData.length} clients chargés`);
       setClients(clientsData);
-    } catch (error) {
-      console.error('Erreur lors du chargement des clients:', error);
-      message.error('Erreur lors du chargement des clients');
-      setClients([]); // Toujours définir un tableau même en cas d'erreur
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors du chargement des clients:', error);
+      console.error('Détails:', error.response?.data);
+      
+      message.error(
+        error.response?.data?.message || 
+        'Erreur lors du chargement des clients. Vérifiez la console pour plus de détails.'
+      );
+      setClients([]);
     } finally {
       setLoading(false);
     }
@@ -152,16 +175,34 @@ const ClientsPage: React.FC = () => {
 
   const fetchStats = async () => {
     try {
+      console.log('📊 Chargement des statistiques...');
       const response = await api.get('/clients/statistics/summary');
+      console.log('📊 Réponse stats:', response.data);
       
-      // S'assurer que les stats sont bien extraites
-      if (response.data && response.data.data) {
-        setStats(response.data.data);
-      } else if (response.data) {
-        setStats(response.data);
+      // Extraction robuste des stats
+      let statsData = {
+        total_clients: 0,
+        active_clients: 0,
+        inactive_clients: 0,
+        new_clients_this_month: 0
+      };
+
+      if (response.data) {
+        if (response.data.data) {
+          statsData = { ...statsData, ...response.data.data };
+        } else if (response.data.success && response.data.data) {
+          statsData = { ...statsData, ...response.data.data };
+        } else {
+          statsData = { ...statsData, ...response.data };
+        }
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement des stats:', error);
+      
+      console.log('✅ Stats chargées:', statsData);
+      setStats(statsData);
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors du chargement des stats:', error);
+      // Ne pas afficher de message d'erreur pour les stats, juste logger
     }
   };
 
@@ -241,27 +282,28 @@ const ClientsPage: React.FC = () => {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onSearch={handleSearch}
+            allowClear
           />
-          <Button type="primary" onClick={fetchClients}>
+          <Button type="primary" onClick={fetchClients} loading={loading}>
             Rechercher
           </Button>
         </Space>
       </Card>
 
-      {/* Tableau - CORRECTION : s'assurer que dataSource est un tableau */}
+      {/* Tableau */}
       <Card>
         <Table
           columns={columns}
-          dataSource={Array.isArray(clients) ? clients : []} // Protection supplémentaire
+          dataSource={clients}
           loading={loading}
           rowKey="id"
           pagination={{ 
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `${total} clients`
+            showTotal: (total) => `${total} client${total > 1 ? 's' : ''}`
           }}
           locale={{
-            emptyText: 'Aucun client trouvé'
+            emptyText: loading ? 'Chargement...' : 'Aucun client trouvé'
           }}
         />
       </Card>
