@@ -167,14 +167,24 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleAvatarUpload = async (file: any) => {
+    const handleAvatarUpload = async (file: File) => {
     setAvatarLoading(true);
     try {
       console.log('📸 Upload avatar');
       const formData = new FormData();
       formData.append('avatar', file);
 
-      //await profilService.updateProfile(formData);
+      // Utilisez un service spécifique pour uploader l'avatar
+      // Exemple: await profilService.uploadAvatar(formData);
+      
+      // TEMPORAIREMENT: Utilisez une requête directe ou décommentez seulement quand vous aurez l'implémentation
+      const api = (await import('../../services/api')).default;
+      await api.post('/profile/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       messageApi.success('Photo de profil mise à jour');
       await fetchProfile();
     } catch (error: any) {
