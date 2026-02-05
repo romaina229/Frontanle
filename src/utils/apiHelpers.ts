@@ -14,30 +14,30 @@ export const extractApiData = <T = any>(response: any): T[] => {
 
   // Réponse paginée Laravel : response.data.data.data
   if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
-    console.log('[apiHelpers] Format: Paginated Laravel (data.data.data)');
+   // console.log('[apiHelpers] Format: Paginated Laravel (data.data.data)');
     return response.data.data.data;
   }
   
   // Réponse simple Laravel Resource : response.data.data
   if (response.data?.data && Array.isArray(response.data.data)) {
-    console.log('[apiHelpers] Format: Simple Laravel Resource (data.data)');
+   // console.log('[apiHelpers] Format: Simple Laravel Resource (data.data)');
     return response.data.data;
   }
   
   // Réponse directe : response.data
   if (response.data && Array.isArray(response.data)) {
-    console.log('[apiHelpers] Format: Direct array (data)');
+   // console.log('[apiHelpers] Format: Direct array (data)');
     return response.data;
   }
   
   // Réponse unique (objet)
   if (response.data?.data && !Array.isArray(response.data.data)) {
-    console.log('[apiHelpers] Format: Single object (data.data)');
+  //  console.log('[apiHelpers] Format: Single object (data.data)');
     return [response.data.data];
   }
   
   // Fallback
-  console.warn('[apiHelpers] Unknown format, returning empty array');
+//  console.warn('[apiHelpers] Unknown format, returning empty array');
   return [];
 };
 
@@ -84,7 +84,7 @@ export const filterValidObjects = <T extends Record<string, any>>(
   requiredProps: string[]
 ): T[] => {
   if (!Array.isArray(items)) {
-    console.warn('[apiHelpers] filterValidObjects - items is not an array:', typeof items);
+    //console.warn('[apiHelpers] filterValidObjects - items is not an array:', typeof items);
     return [];
   }
 
@@ -135,7 +135,7 @@ export const formatDateTime = (date: string | Date): string => {
  * Extrait les statistiques d'une réponse API
  */
 export const extractStatsData = (response: any): any => {
-  console.log('[apiHelpers] extractStatsData - Response:', response.data);
+ // console.log('[apiHelpers] extractStatsData - Response:', response.data);
   
   if (response.data?.data) {
     return response.data.data;
