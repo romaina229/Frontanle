@@ -177,7 +177,7 @@ const SettingsPage: React.FC = () => {
           >
             <Form.Item
               label="Nom complet *"
-              name="name"
+              name="nom"
               rules={[{ required: true, message: 'Nom requis' }]}
             >
               <Input placeholder="Votre nom complet" />

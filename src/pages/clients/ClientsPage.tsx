@@ -122,38 +122,48 @@ const ClientsPage: React.FC = () => {
       
       console.log('🔍 Chargement des clients...');
       const response = await api.get('/clients', { params });
-      console.log('📦 Réponse API clients:', response.data);
+      console.log('📦 Réponse API clients:', response);
       
-      // Extraction robuste des données
+      // NOUVELLE APPROCHE - Plus simple et robuste
       let clientsData: Client[] = [];
       
-      if (response.data) {
-        // Cas 1: response.data.data (structure Laravel paginée ou wrappée)
-        if (response.data.data && Array.isArray(response.data.data)) {
-          clientsData = response.data.data;
-          console.log('✅ Format: response.data.data (tableau)');
-        }
-        // Cas 2: response.data est directement un tableau
-        else if (Array.isArray(response.data)) {
-          clientsData = response.data;
-          console.log('✅ Format: response.data (tableau direct)');
-        }
-        // Cas 3: response.data.success avec data
-        else if (response.data.success && response.data.data) {
-          if (Array.isArray(response.data.data)) {
-            clientsData = response.data.data;
-            console.log('✅ Format: response.data.success + data');
-          }
-        }
-        // Cas 4: Pagination Laravel
-        else if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
-          clientsData = response.data.data.data;
-          console.log('✅ Format: pagination Laravel');
-        }
-        else {
-          console.warn('⚠️ Structure de réponse non reconnue:', response.data);
-          clientsData = [];
-        }
+      // Essayez d'extraire les données de différentes manières
+      const data = response.data;
+      
+      if (Array.isArray(data)) {
+        // Cas 1: La réponse est directement un tableau
+        clientsData = data;
+        console.log('✅ Format: tableau direct');
+      } 
+      else if (data && Array.isArray(data.data)) {
+        // Cas 2: Structure Laravel standard {data: [...]}
+        clientsData = data.data;
+        console.log('✅ Format: data.data');
+      }
+      else if (data && data.data && Array.isArray(data.data.data)) {
+        // Cas 3: Structure paginée
+        clientsData = data.data.data;
+        console.log('✅ Format: pagination data.data.data');
+      }
+      else if (data && data.success && Array.isArray(data.data)) {
+        // Cas 4: Structure avec success flag
+        clientsData = data.data;
+        console.log('✅ Format: success.data');
+      }
+      else if (data && data.clients) {
+        // Cas 5: Structure avec clé clients
+        clientsData = Array.isArray(data.clients) ? data.clients : [];
+        console.log('✅ Format: data.clients');
+      }
+      else {
+        console.warn('⚠️ Aucune donnée de client trouvée dans la réponse:', data);
+        clientsData = [];
+      }
+      
+      // Vérifiez la structure des données pour debug
+      if (clientsData.length > 0) {
+        console.log('📋 Premier client:', clientsData[0]);
+        console.log('📋 Structure des clés:', Object.keys(clientsData[0]));
       }
       
       console.log(`✅ ${clientsData.length} clients chargés`);
@@ -161,11 +171,12 @@ const ClientsPage: React.FC = () => {
       
     } catch (error: any) {
       console.error('❌ Erreur lors du chargement des clients:', error);
-      console.error('Détails:', error.response?.data);
+      console.error('Status:', error.response?.status);
+      console.error('Data:', error.response?.data);
       
       message.error(
         error.response?.data?.message || 
-        'Erreur lors du chargement des clients. Vérifiez la console pour plus de détails.'
+        'Erreur lors du chargement des clients'
       );
       setClients([]);
     } finally {

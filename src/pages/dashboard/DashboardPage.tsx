@@ -46,7 +46,7 @@ import {
 import { Line, Bar } from 'react-chartjs-2';
 
 import api from '../../services/api';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+//import { formatCurrency, formatDate } from '../../utils/formatters';
 import { extractApiData, extractStatsData, handleApiError, formatDateTime } from '../../utils/apiHelpers';
 import StatCard from '../../components/dashboard/StatCard';
 
@@ -65,6 +65,28 @@ ChartJS.register(
 const { Title: AntTitle, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+
+  // Fonctions utilitaires si elles n'existent pas
+  const formatCurrency = (value: number) => {
+    if (value === undefined || value === null) return '0 FCFA';
+    return new Intl.NumberFormat('fr-FR').format(value) + ' FCFA';
+  };
+
+  const formatDate = (dateString: string, format: string = 'DD/MM/YYYY HH:mm') => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
 
 interface DashboardStats {
   total_revenue?: number;
@@ -131,7 +153,7 @@ const DashboardPage: React.FC = () => {
     queryKey: ['dashboard', 'stats'],
     queryFn: async () => {
       try {
-        const response = await api.get('/sales/statistics/summary', {
+        const response = await api.get('/dashboard/stats', {
         params: { period: 'today' }
       });
         
@@ -550,7 +572,7 @@ const DashboardPage: React.FC = () => {
                     title: 'Montant', 
                     dataIndex: 'total_amount', 
                     key: 'total_amount', 
-                    /*render: formatCurrency,*/
+                    render: (amount: number) => formatCurrency(amount),
                     align: 'right' as const
                   },
                   { 

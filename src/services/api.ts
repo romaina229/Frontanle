@@ -79,10 +79,23 @@ export const apiService = {
   createClient: (data: any) => api.post('/clients', data),
   updateClient: (id: number, data: any) => api.put(`/clients/${id}`, data), // CORRIGÉ
   deleteClient: (id: number) => api.delete(`/clients/${id}`), // CORRIGÉ
+  getClientStats: () => api.get('/clients/statistics/summary'),
+  searchClients: (params: any) => api.get('/clients', { params }),
   searchClientByPhone: (phone: string) => api.get(`/clients/search/phone/${phone}`), // CORRIGÉ
   getSuppliers: (params?: any) => api.get('/suppliers', { params }),
   getSupplier: (id: number) => api.get(`/suppliers/${id}`), // CORRIGÉ
   createSupplier: (data: any) => api.post('/suppliers', data),
+  // Fonctions pour les factures
+  getInvoices: (params?: any) => api.get('/invoices', { params }),
+  getInvoice: (id: number) => api.get(`/invoices/${id}`),
+  getInvoiceItems: (id: number) => api.get(`/invoices/${id}/items`),
+  getInvoicePayments: (id: number) => api.get(`/invoices/${id}/payments`),
+  downloadInvoice: (id: number) => api.get(`/invoices/${id}/download`, {
+    responseType: 'blob'
+  }),
+  printInvoice: (id: number) => api.get(`/invoices/${id}/print`, {
+    responseType: 'blob'
+  }),
   updateSupplier: (id: number, data: any) => api.put(`/suppliers/${id}`, data), // CORRIGÉ
   deleteSupplier: (id: number) => api.delete(`/suppliers/${id}`), // CORRIGÉ
   getDashboardStats: (period?: string) => api.get('/dashboard/stats', { params: { period } }),

@@ -1,6 +1,6 @@
-// src/pages/invoices/InvoicesPage.tsx - VERSION FINALE CORRIGÉE
+// src/pages/invoices/InvoicesPage.tsx - VERSION CORRIGÉE
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Tag, DatePicker, Select, Row, Col, message, Modal } from 'antd';
+import { Table, Button, Card, Tag, DatePicker, Select, Row, Col, message } from 'antd';
 import { EyeOutlined, PrinterOutlined, DownloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
@@ -175,26 +175,8 @@ const InvoicesPage: React.FC = () => {
 
   // Voir les détails de la facture
   const handleViewInvoice = (id: number) => {
-    console.log('👁️ Affichage facture:', id);
-    
-    // Option 1: Ouvrir dans un modal
-    Modal.info({
-      title: `Facture #${id}`,
-      content: (
-        <div style={{ padding: '20px 0' }}>
-          <p>Les détails de la facture seront affichés ici.</p>
-          {/*<p>Vous pouvez créer une page de détails ou afficher dans un modal.</p>*/}
-        </div>
-      ),
-      width: 800,
-      okText: 'Fermer'
-    });
-
-    // Option 2: Naviguer vers une page de détails (si elle existe)
-    // navigate(`/invoices/${id}`);
-    
-    // Option 3: Ouvrir dans un nouvel onglet
-    // window.open(`/invoices/${id}`, '_blank');
+    console.log('👁️ Affichage détails facture:', id);
+    navigate(`/invoices/${id}`);
   };
 
   // Imprimer la facture
@@ -207,42 +189,73 @@ const InvoicesPage: React.FC = () => {
         responseType: 'blob'
       });
       
-      // Créer un blob depuis la réponse
-      const blob = response.data.data || response.data;
-      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-      
-      // Ouvrir dans une nouvelle fenêtre pour impression
-      const printWindow = window.open(url, '_blank');
-      
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-        message.success({ content: 'Fenêtre d\'impression ouverte', key: 'print' });
+      // Vérifier si la réponse contient des données
+      let blobData;
+      if (response.data && response.data.data) {
+        blobData = response.data.data;
       } else {
-        // Si le popup est bloqué, télécharger le fichier
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `facture-${id}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        message.success({ content: 'Facture téléchargée', key: 'print' });
+        blobData = response.data;
       }
       
-      // Nettoyer l'URL
-      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+      // Vérifier si nous avons des données blob valides
+      if (!blobData || blobData.size === 0) {
+        throw new Error('Aucune donnée PDF reçue');
+      }
+      
+      // Créer un blob
+      const blob = new Blob([blobData], { 
+        type: response.headers['content-type'] || 'application/pdf' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Créer un iframe pour l'impression
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.print();
+          message.success({ content: 'Impression lancée', key: 'print' });
+        } catch (e) {
+          console.warn('Impression échouée, ouverture PDF:', e);
+          // Si l'impression échoue, ouvrir le PDF
+          window.open(url, '_blank');
+        }
+        
+        // Nettoyage après 1 seconde
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+      };
+      
+      iframe.src = url;
       
     } catch (error: any) {
       console.error('❌ Erreur impression:', error);
-      message.error({ 
-        content: error.response?.data?.message || 'Erreur lors de l\'impression',
-        key: 'print'
-      });
+      
+      // Solution de secours : redirection vers une page d'impression
+      const fallbackUrl = `/invoices/${id}/print`;
+      const newWindow = window.open(fallbackUrl, '_blank');
+      
+      if (!newWindow) {
+        message.error({ 
+          content: 'Popup bloqué. Veuillez autoriser les popups pour cette page.',
+          key: 'print'
+        });
+      } else {
+        message.info({ 
+          content: 'Redirection vers la page d\'impression',
+          key: 'print'
+        });
+      }
     }
   };
 
-  // Télécharger la facture
+  // Télécharger la facture - Version améliorée
   const handleDownloadInvoice = async (id: number) => {
     try {
       console.log('⬇️ Téléchargement facture:', id);
@@ -252,25 +265,60 @@ const InvoicesPage: React.FC = () => {
         responseType: 'blob'
       });
       
-      // Créer un blob et un lien de téléchargement
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      // Extraction du nom de fichier depuis les headers ou création d'un nom par défaut
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `facture-${id}.pdf`;
+      
+      if (contentDisposition) {
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+        if (matches && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      // Créer le blob
+      const blobData = response.data.data || response.data;
+      if (!blobData || blobData.size === 0) {
+        throw new Error('Aucune donnée PDF reçue');
+      }
+      
+      const blob = new Blob(
+        [blobData], 
+        { type: response.headers['content-type'] || 'application/pdf' }
+      );
+      
+      // Télécharger
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `facture-${id}.pdf`);
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
-      link.remove();
       
-      // Nettoyer l'URL
+      // Nettoyage
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      message.success({ content: 'Facture téléchargée avec succès', key: 'download' });
+      message.success({ 
+        content: `Facture téléchargée : ${filename}`, 
+        key: 'download' 
+      });
       
     } catch (error: any) {
       console.error('❌ Erreur téléchargement:', error);
-      message.error({ 
-        content: error.response?.data?.message || 'Erreur lors du téléchargement',
+      
+      // Tentative de secours avec une URL directe
+      const fallbackUrl = `/api/invoices/${id}/download`;
+      const link = document.createElement('a');
+      link.href = fallbackUrl;
+      link.download = `facture-${id}.pdf`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      message.warning({ 
+        content: 'Tentative de téléchargement direct',
         key: 'download'
       });
     }
