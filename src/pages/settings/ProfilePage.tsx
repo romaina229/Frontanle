@@ -173,8 +173,8 @@ const ProfilePage: React.FC = () => {
       console.log('📸 Upload avatar');
       const formData = new FormData();
       formData.append('avatar', file);
-      
-      await profilService.updateProfile(formData);
+
+      //await profilService.updateProfile(formData);
       messageApi.success('Photo de profil mise à jour');
       await fetchProfile();
     } catch (error: any) {
