@@ -1,8 +1,9 @@
-// src/pages/invoices/InvoicesPage.tsx - VERSION CORRIGÉE
+// src/pages/invoices/InvoicesPage.tsx - VERSION FINALE CORRIGÉE
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Card, Tag, DatePicker, Select, Row, Col, message } from 'antd';
+import { Table, Button, Card, Tag, DatePicker, Select, Row, Col, message, Modal } from 'antd';
 import { EyeOutlined, PrinterOutlined, DownloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
 const { RangePicker } = DatePicker;
@@ -24,6 +25,7 @@ interface Invoice {
 }
 
 const InvoicesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -35,7 +37,11 @@ const InvoicesPage: React.FC = () => {
     {
       title: 'N° Facture',
       dataIndex: 'invoice_number',
-      render: (invoiceNumber: string) => invoiceNumber || 'N/A',
+      render: (invoiceNumber: string) => (
+        <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>
+          {invoiceNumber || 'N/A'}
+        </span>
+      ),
     },
     {
       title: 'Date',
@@ -46,7 +52,9 @@ const InvoicesPage: React.FC = () => {
       title: 'Client',
       render: (_: any, record: Invoice) => (
         <div>
-          {record.sale?.client?.name || 'Non renseigné'}
+          <div style={{ fontWeight: 500 }}>
+            {record.sale?.client?.name || 'Non renseigné'}
+          </div>
           {record.sale?.client?.telephone && (
             <div style={{ color: '#999', fontSize: '12px' }}>
               📞 {record.sale.client.telephone}
@@ -59,23 +67,25 @@ const InvoicesPage: React.FC = () => {
       title: 'Montant',
       dataIndex: 'total_amount',
       render: (amount: number) => (
-        <strong>
+        <strong style={{ color: '#52c41a' }}>
           {amount ? new Intl.NumberFormat('fr-FR').format(amount) : '0'} FCFA
         </strong>
       ),
+      align: 'right' as const,
     },
     {
       title: 'Statut',
       dataIndex: 'status',
       render: (status: string) => {
-        const colors: any = {
-          'draft': 'default',
-          'sent': 'blue',
-          'paid': 'green',
-          'overdue': 'orange',
-          'cancelled': 'red',
+        const configs: any = {
+          'draft': { color: 'default', label: 'Brouillon' },
+          'sent': { color: 'blue', label: 'Envoyée' },
+          'paid': { color: 'green', label: 'Payée' },
+          'overdue': { color: 'orange', label: 'En retard' },
+          'cancelled': { color: 'red', label: 'Annulée' },
         };
-        return <Tag color={colors[status] || 'default'}>{status || 'draft'}</Tag>;
+        const config = configs[status] || { color: 'default', label: status || 'draft' };
+        return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
     {
@@ -86,13 +96,15 @@ const InvoicesPage: React.FC = () => {
             <Button 
               icon={<EyeOutlined />} 
               size="small"
-              onClick={() => window.open(`/invoices/${record.id}`, '_blank')}
+              title="Voir les détails"
+              onClick={() => handleViewInvoice(record.id)}
             />
           </Col>
           <Col>
             <Button 
               icon={<PrinterOutlined />} 
               size="small"
+              title="Imprimer"
               onClick={() => handlePrintInvoice(record.id)}
             />
           </Col>
@@ -100,6 +112,7 @@ const InvoicesPage: React.FC = () => {
             <Button 
               icon={<DownloadOutlined />} 
               size="small"
+              title="Télécharger PDF"
               onClick={() => handleDownloadInvoice(record.id)}
             />
           </Col>
@@ -134,28 +147,14 @@ const InvoicesPage: React.FC = () => {
       let invoicesData: Invoice[] = [];
       
       if (response.data) {
-        // Cas 1: response.data.data
         if (response.data.data && Array.isArray(response.data.data)) {
           invoicesData = response.data.data;
-          console.log('✅ Format: response.data.data');
-        }
-        // Cas 2: response.data direct
-        else if (Array.isArray(response.data)) {
+        } else if (Array.isArray(response.data)) {
           invoicesData = response.data;
-          console.log('✅ Format: response.data (tableau)');
-        }
-        // Cas 3: success + data
-        else if (response.data.success && Array.isArray(response.data.data)) {
+        } else if (response.data.success && Array.isArray(response.data.data)) {
           invoicesData = response.data.data;
-          console.log('✅ Format: success + data');
-        }
-        // Cas 4: Pagination Laravel
-        else if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
+        } else if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
           invoicesData = response.data.data.data;
-          console.log('✅ Format: pagination Laravel');
-        }
-        else {
-          console.warn('⚠️ Structure non reconnue:', response.data);
         }
       }
       
@@ -164,8 +163,6 @@ const InvoicesPage: React.FC = () => {
       
     } catch (error: any) {
       console.error('❌ Erreur chargement factures:', error);
-      console.error('Détails:', error.response?.data);
-      
       message.error(
         error.response?.data?.message || 
         'Erreur lors du chargement des factures'
@@ -176,58 +173,106 @@ const InvoicesPage: React.FC = () => {
     }
   };
 
+  // Voir les détails de la facture
+  const handleViewInvoice = (id: number) => {
+    console.log('👁️ Affichage facture:', id);
+    
+    // Option 1: Ouvrir dans un modal
+    Modal.info({
+      title: `Facture #${id}`,
+      content: (
+        <div style={{ padding: '20px 0' }}>
+          <p>Les détails de la facture seront affichés ici.</p>
+          {/*<p>Vous pouvez créer une page de détails ou afficher dans un modal.</p>*/}
+        </div>
+      ),
+      width: 800,
+      okText: 'Fermer'
+    });
+
+    // Option 2: Naviguer vers une page de détails (si elle existe)
+    // navigate(`/invoices/${id}`);
+    
+    // Option 3: Ouvrir dans un nouvel onglet
+    // window.open(`/invoices/${id}`, '_blank');
+  };
+
+  // Imprimer la facture
   const handlePrintInvoice = async (id: number) => {
     try {
       console.log('🖨️ Impression facture:', id);
+      message.loading({ content: 'Préparation de l\'impression...', key: 'print' });
+      
       const response = await api.get(`/invoices/${id}/print`, {
         responseType: 'blob'
       });
       
-      // Vérifier si la réponse contient des données
+      // Créer un blob depuis la réponse
       const blob = response.data.data || response.data;
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `facture-${id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      // Ouvrir dans une nouvelle fenêtre pour impression
+      const printWindow = window.open(url, '_blank');
       
-      message.success('Facture téléchargée');
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+        message.success({ content: 'Fenêtre d\'impression ouverte', key: 'print' });
+      } else {
+        // Si le popup est bloqué, télécharger le fichier
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `facture-${id}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        message.success({ content: 'Facture téléchargée', key: 'print' });
+      }
+      
+      // Nettoyer l'URL
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+      
     } catch (error: any) {
       console.error('❌ Erreur impression:', error);
-      message.error(
-        error.response?.data?.message || 
-        'Erreur lors du téléchargement de la facture'
-      );
+      message.error({ 
+        content: error.response?.data?.message || 'Erreur lors de l\'impression',
+        key: 'print'
+      });
     }
   };
 
+  // Télécharger la facture
   const handleDownloadInvoice = async (id: number) => {
     try {
       console.log('⬇️ Téléchargement facture:', id);
+      message.loading({ content: 'Téléchargement en cours...', key: 'download' });
+      
       const response = await api.get(`/invoices/${id}/download`, {
         responseType: 'blob'
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Créer un blob et un lien de téléchargement
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `facture-${id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      
+      // Nettoyer l'URL
       window.URL.revokeObjectURL(url);
       
-      message.success('Facture téléchargée');
+      message.success({ content: 'Facture téléchargée avec succès', key: 'download' });
+      
     } catch (error: any) {
       console.error('❌ Erreur téléchargement:', error);
-      message.error(
-        error.response?.data?.message || 
-        'Erreur lors du téléchargement de la facture'
-      );
+      message.error({ 
+        content: error.response?.data?.message || 'Erreur lors du téléchargement',
+        key: 'download'
+      });
     }
   };
 
@@ -240,7 +285,7 @@ const InvoicesPage: React.FC = () => {
       {/* Filtres */}
       <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
-          <Col span={8}>
+          <Col xs={24} sm={8}>
             <RangePicker
               style={{ width: '100%' }}
               placeholder={['Date début', 'Date fin']}
@@ -251,9 +296,9 @@ const InvoicesPage: React.FC = () => {
               format="DD/MM/YYYY"
             />
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={8}>
             <Select
-              placeholder="Statut"
+              placeholder="Filtrer par statut"
               style={{ width: '100%' }}
               onChange={(value) => setFilters({ ...filters, status: value })}
               allowClear
@@ -265,7 +310,7 @@ const InvoicesPage: React.FC = () => {
               <Option value="cancelled">Annulée</Option>
             </Select>
           </Col>
-          <Col span={8}>
+          <Col xs={24} sm={8}>
             <Button 
               type="primary" 
               onClick={fetchInvoices}
@@ -288,11 +333,13 @@ const InvoicesPage: React.FC = () => {
           pagination={{ 
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `${total} facture${total > 1 ? 's' : ''}`
+            showTotal: (total) => `${total} facture${total > 1 ? 's' : ''}`,
+            pageSizeOptions: ['10', '20', '50']
           }}
           locale={{
             emptyText: loading ? 'Chargement...' : 'Aucune facture trouvée'
           }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>

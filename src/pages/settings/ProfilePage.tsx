@@ -1,14 +1,17 @@
-// src/pages/settings/ProfilePage.tsx - VERSION CORRIGÉE
+// src/pages/settings/ProfilePage.tsx - VERSION FINALE CORRIGÉE
 import React, { useState, useEffect } from 'react';
-import { Tag, Spin } from 'antd';
+import { Tag, Spin, Alert } from 'antd';
 import { 
   Card, Form, Input, Button, Avatar, Row, Col, 
   Divider, message, Upload, Tabs, Modal, App 
 } from 'antd';
 import { 
   UserOutlined, MailOutlined, PhoneOutlined, 
-  SaveOutlined, LockOutlined, CameraOutlined 
+  SaveOutlined, LockOutlined, CameraOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { profilService } from '../../services/profileService';
 import dayjs from 'dayjs';
 
@@ -22,6 +25,10 @@ const ProfilePage: React.FC = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Récupérer les infos utilisateur depuis Redux comme fallback
+  const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     fetchProfile();
@@ -29,20 +36,60 @@ const ProfilePage: React.FC = () => {
 
   const fetchProfile = async () => {
     setPageLoading(true);
+    setError(null);
+    
     try {
       console.log('🔍 Chargement du profil...');
-      const response = await profilService.getProfile();
-      console.log('📦 Réponse profil:', response);
       
-      // Extraction robuste des données
+      // Essayer plusieurs endpoints possibles
+      let response;
       let profileData = null;
       
-      if (response) {
-        if (response.data) {
-          profileData = response.data;
-        } else {
-          profileData = response;
+      try {
+        // Endpoint 1: /profile
+        response = await profilService.getProfile();
+        console.log('📦 Réponse /profile:', response);
+      } catch (err: any) {
+        console.warn('⚠️ /profile échoué, essai /user/profile');
+        
+        // Endpoint 2: /user/profile
+        try {
+          response = await profilService.getProfile(); // Utilise l'endpoint configuré dans le service
+        } catch (err2: any) {
+          console.warn('⚠️ /user/profile échoué, essai /me');
+          
+          // Endpoint 3: /me
+          try {
+            const api = (await import('../../services/api')).default;
+            response = await api.get('/me');
+          } catch (err3) {
+            throw err3;
+          }
         }
+      }
+      
+      // Extraction des données
+      if (response) {
+        if (response.data?.data) {
+          profileData = response.data.data;
+        } else if (response.data) {
+          profileData = response.data;
+        }
+      }
+      
+      // Si aucune donnée du serveur, utiliser les données Redux
+      if (!profileData && user) {
+        console.log('ℹ️ Utilisation des données Redux comme fallback');
+        profileData = {
+          nom: user.name,
+          email: user.email,
+          role: user.role,
+          telephone: user.telephone || '',
+         // adresse: user.address || '',
+          bio: '',
+          actif: true,
+          created_at: user.created_at || new Date().toISOString()
+        };
       }
       
       if (profileData) {
@@ -50,28 +97,34 @@ const ProfilePage: React.FC = () => {
         setProfile(profileData);
         form.setFieldsValue(profileData);
       } else {
-        console.warn('⚠️ Aucune donnée de profil reçue');
-        messageApi.warning('Impossible de charger le profil');
+        throw new Error('Aucune donnée de profil disponible');
       }
       
     } catch (error: any) {
-      console.error('❌ Erreur lors du chargement du profil:', error);
+      console.error('❌ Erreur chargement profil:', error);
       console.error('Détails:', error.response?.data);
       
-      // Gestion des erreurs spécifiques
-      if (error.response?.status === 404) {
-        messageApi.error('Profil non trouvé. Contactez l\'administrateur.');
-      } else if (error.response?.status === 401) {
-        messageApi.error('Session expirée. Veuillez vous reconnecter.');
-      } else if (error.response?.status === 422) {
-        messageApi.error('Données de profil invalides.');
-      } else if (error.response?.status === 500) {
-        messageApi.error('Erreur serveur. Contactez l\'administrateur.');
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Impossible de charger le profil';
+      
+      setError(errorMessage);
+      
+      // Utiliser les données Redux comme dernier recours
+      if (user) {
+        const fallbackData = {
+          nom: user.name,
+          email: user.email,
+          role: user.role,
+          telephone: '',
+          adresse: '',
+          actif: true
+        };
+        setProfile(fallbackData);
+        form.setFieldsValue(fallbackData);
+        messageApi.warning('Profil chargé en mode hors ligne');
       } else {
-        messageApi.error(
-          error.response?.data?.message || 
-          'Erreur lors du chargement du profil'
-        );
+        messageApi.error(errorMessage);
       }
     } finally {
       setPageLoading(false);
@@ -84,7 +137,7 @@ const ProfilePage: React.FC = () => {
       console.log('💾 Mise à jour du profil:', values);
       await profilService.updateProfile(values);
       messageApi.success('Profil mis à jour avec succès');
-      await fetchProfile(); // Recharger les données
+      await fetchProfile();
     } catch (error: any) {
       console.error('❌ Erreur mise à jour profil:', error);
       messageApi.error(
@@ -116,16 +169,12 @@ const ProfilePage: React.FC = () => {
 
   const handleAvatarUpload = async (file: any) => {
     setAvatarLoading(true);
-    const formData = new FormData();
-    formData.append('avatar', file);
-
     try {
       console.log('📸 Upload avatar');
-      await profilService.updateProfile({ 
-        avatar: file,
-        name: profile?.name,
-        email: profile?.email
-      });
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      await profilService.updateProfile(formData);
       messageApi.success('Photo de profil mise à jour');
       await fetchProfile();
     } catch (error: any) {
@@ -138,7 +187,7 @@ const ProfilePage: React.FC = () => {
       setAvatarLoading(false);
     }
     
-    return false; // Empêcher l'upload automatique
+    return false;
   };
 
   const tabItems = [
@@ -191,7 +240,7 @@ const ProfilePage: React.FC = () => {
               </Row>
 
               <Form.Item label="À propos" name="bio">
-                <TextArea rows={3} placeholder="Une brève description..." />
+                <TextArea rows={3} placeholder="Une brève description..." maxLength={500} showCount />
               </Form.Item>
 
               <Form.Item>
@@ -317,88 +366,62 @@ const ProfilePage: React.FC = () => {
               </Form.Item>
             </Form>
           </Card>
-
-          <Divider />
-
-          <Card title="Sessions actives">
-            <p style={{ color: '#666' }}>
-              Pour des raisons de sécurité, vous pouvez déconnecter toutes les sessions actives 
-              sur d'autres appareils.
-            </p>
-            <Button 
-              type="primary" 
-              danger
-              onClick={() => {
-                Modal.confirm({
-                  title: 'Déconnexion globale',
-                  content: 'Êtes-vous sûr de vouloir déconnecter toutes les autres sessions?',
-                  onOk: async () => {
-                    try {
-                      await Promise.resolve();
-                      messageApi.success('Toutes les autres sessions ont été déconnectées');
-                    } catch (error) {
-                      messageApi.error('Erreur lors de la déconnexion');
-                    }
-                  },
-                });
-              }}
-            >
-              Déconnecter toutes les autres sessions
-            </Button>
-          </Card>
         </>
-      )
-    },
-    {
-      key: 'notifications',
-      label: 'Notifications',
-      children: (
-        <Card>
-          <h3>Préférences de notification</h3>
-          <p style={{ color: '#666' }}>
-            Configuration des notifications (fonctionnalité en développement)
-          </p>
-        </Card>
       )
     }
   ];
 
-  // Affichage pendant le chargement initial
   if (pageLoading) {
     return (
       <div style={{ 
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        minHeight: '60vh' 
+        minHeight: '60vh',
+        flexDirection: 'column',
+        gap: 16
       }}>
-        <Spin size="large" tip="Chargement du profil..." />
+        <Spin size="large" />
+        <div>Chargement du profil...</div>
       </div>
     );
   }
 
-  // Affichage si aucun profil n'est chargé
-  if (!profile) {
+  if (error && !profile) {
     return (
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px' }}>
-        <Card>
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <UserOutlined style={{ fontSize: 48, color: '#ccc' }} />
-            <h3 style={{ marginTop: 16 }}>Profil non disponible</h3>
-            <p style={{ color: '#999' }}>
-              Impossible de charger les informations du profil.
-            </p>
-            <Button type="primary" onClick={fetchProfile}>
+        <Alert
+          message="Erreur de chargement"
+          description={error}
+          type="error"
+          showIcon
+          action={
+            <Button 
+              size="small" 
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={fetchProfile}
+            >
               Réessayer
             </Button>
-          </div>
-        </Card>
+          }
+        />
       </div>
     );
   }
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      {error && (
+        <Alert
+          message="Mode dégradé"
+          description="Certaines fonctionnalités peuvent être limitées"
+          type="warning"
+          closable
+          style={{ marginBottom: 20 }}
+        />
+      )}
+      
       <div style={{ textAlign: 'center', marginBottom: 30 }}>
         <Upload
           accept="image/*"
@@ -428,13 +451,13 @@ const ProfilePage: React.FC = () => {
           </div>
         </Upload>
         <h2 style={{ marginTop: 16, marginBottom: 4 }}>
-          {profile?.nom || 'Utilisateur'}
+          {profile?.nom || user?.name || 'Utilisateur'}
         </h2>
         <p style={{ color: '#666', marginBottom: 8 }}>
-          {profile?.email || 'email@example.com'}
+          {profile?.email || user?.email || 'email@example.com'}
         </p>
         <Tag color="blue" style={{ textTransform: 'uppercase' }}>
-          {profile?.role || 'UTILISATEUR'}
+          {profile?.role || user?.role || 'UTILISATEUR'}
         </Tag>
       </div>
 

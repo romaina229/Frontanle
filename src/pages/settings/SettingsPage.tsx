@@ -1,7 +1,9 @@
-// src/pages/settings/SettingsPage.tsx - VERSION CORRIGÉE
+// src/pages/settings/SettingsPage.tsx - VERSION FINALE CORRIGÉE
 import React, { useState, useEffect } from 'react';
-import { Tabs, Form, Input, Button, Card, Switch, Select, App, Spin } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
+import { Tabs, Form, Input, Button, Card, Switch, Select, App, Spin, Alert } from 'antd';
+import { SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { settingsService } from '../../services/settingsService';
 import { profilService } from '../../services/profileService';
 
@@ -10,8 +12,12 @@ const { TextArea } = Input;
 
 const SettingsPage: React.FC = () => {
   const { message } = App.useApp();
+  const { user } = useSelector((state: RootState) => state.auth);
+  
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
   const [profileForm] = Form.useForm();
   const [settingsForm] = Form.useForm();
   const [notificationsForm] = Form.useForm();
@@ -22,26 +28,62 @@ const SettingsPage: React.FC = () => {
 
   const loadInitialData = async () => {
     setPageLoading(true);
+    setError(null);
+    
     try {
+      console.log('🔄 Chargement des données initiales...');
+      
       // Charger les données du profil
-      const profileResponse = await profilService.getProfile();
-      if (profileResponse?.data) {
-        profileForm.setFieldsValue(profileResponse.data);
+      try {
+        const profileResponse = await profilService.getProfile();
+        console.log('📦 Profil:', profileResponse);
+        
+        if (profileResponse?.data) {
+          profileForm.setFieldsValue(profileResponse.data);
+        } else if (user) {
+          // Utiliser les données Redux comme fallback
+          profileForm.setFieldsValue({
+            nom: user.name,
+            email: user.email,
+            telephone: user.telephone || '',
+           // adresse: user.address || ''
+          });
+        }
+      } catch (profileError: any) {
+        console.warn('⚠️ Erreur chargement profil:', profileError);
+        
+        // Utiliser les données Redux
+        if (user) {
+          profileForm.setFieldsValue({
+            nom: user.name,
+            email: user.email,
+            telephone: user.telephone || '',
+            //adresse: user.address || ''
+          });
+        }
       }
 
       // Charger les paramètres de l'application
       try {
         const settingsResponse = await settingsService.getAll();
+        console.log('⚙️ Paramètres:', settingsResponse);
+        
         if (settingsResponse?.data) {
           settingsForm.setFieldsValue(settingsResponse.data);
         }
-      } catch (error) {
-        console.log('Paramètres non disponibles, utilisation des valeurs par défaut');
+      } catch (settingsError: any) {
+        console.warn('⚠️ Paramètres non disponibles:', settingsError);
+        // Utiliser les valeurs par défaut (déjà définies dans initialValues)
       }
 
+      console.log('✅ Données chargées');
+      
     } catch (error: any) {
-      console.error('Erreur chargement données:', error);
-      message.warning('Certaines données n\'ont pas pu être chargées');
+      console.error('❌ Erreur chargement données:', error);
+      const errorMsg = error.response?.data?.message || 
+                      'Certaines données n\'ont pas pu être chargées';
+      setError(errorMsg);
+      message.warning(errorMsg);
     } finally {
       setPageLoading(false);
     }
@@ -68,14 +110,27 @@ const SettingsPage: React.FC = () => {
     setLoading(true);
     try {
       console.log('⚙️ Mise à jour paramètres:', values);
-      await settingsService.update(values);
-      message.success('Paramètres sauvegardés avec succès');
+      
+      // Vérifier si le service settings existe
+      if (settingsService && typeof settingsService.update === 'function') {
+        await settingsService.update(values);
+        message.success('Paramètres sauvegardés avec succès');
+      } else {
+        // Alternative: sauvegarder via une autre méthode
+        console.warn('⚠️ Service settings non disponible, sauvegarde locale');
+        localStorage.setItem('app_settings', JSON.stringify(values));
+        message.success('Paramètres sauvegardés localement');
+      }
     } catch (error: any) {
       console.error('❌ Erreur paramètres:', error);
-      message.error(
-        error.response?.data?.message || 
-        'Erreur lors de la sauvegarde des paramètres'
-      );
+      
+      // Si l'API échoue, sauvegarder localement
+      try {
+        localStorage.setItem('app_settings', JSON.stringify(values));
+        message.warning('Paramètres sauvegardés localement (serveur indisponible)');
+      } catch (localError) {
+        message.error('Erreur lors de la sauvegarde des paramètres');
+      }
     } finally {
       setLoading(false);
     }
@@ -85,15 +140,25 @@ const SettingsPage: React.FC = () => {
     setLoading(true);
     try {
       console.log('🔔 Mise à jour notifications:', values);
-      // Implémenter l'enregistrement des préférences de notifications
-      await settingsService.update({ notifications: values });
-      message.success('Préférences de notifications sauvegardées');
+      
+      // Sauvegarder les préférences
+      if (settingsService && typeof settingsService.update === 'function') {
+        await settingsService.update({ notifications: values });
+        message.success('Préférences de notifications sauvegardées');
+      } else {
+        localStorage.setItem('notification_settings', JSON.stringify(values));
+        message.success('Préférences sauvegardées localement');
+      }
     } catch (error: any) {
       console.error('❌ Erreur notifications:', error);
-      message.error(
-        error.response?.data?.message || 
-        'Erreur lors de la sauvegarde des préférences'
-      );
+      
+      // Fallback local
+      try {
+        localStorage.setItem('notification_settings', JSON.stringify(values));
+        message.warning('Préférences sauvegardées localement');
+      } catch (localError) {
+        message.error('Erreur lors de la sauvegarde');
+      }
     } finally {
       setLoading(false);
     }
@@ -129,27 +194,18 @@ const SettingsPage: React.FC = () => {
               <Input type="email" placeholder="votre.email@exemple.com" />
             </Form.Item>
             
-            <Form.Item 
-              label="Téléphone" 
-              name="telephone"
-            >
+            <Form.Item label="Téléphone" name="telephone">
               <Input placeholder="+229 XX XX XX XX" />
             </Form.Item>
 
-            <Form.Item 
-              label="Adresse" 
-              name="adresse"
-            >
+            <Form.Item label="Adresse" name="address">
               <Input placeholder="Votre adresse" />
             </Form.Item>
 
-            <Form.Item 
-              label="Bio / À propos" 
-              name="bio"
-            >
+            <Form.Item label="Bio / À propos" name="bio">
               <TextArea 
                 rows={3} 
-                placeholder="Une brève description de vous..."
+                placeholder="Une brève description..."
                 maxLength={500}
                 showCount
               />
@@ -182,7 +238,8 @@ const SettingsPage: React.FC = () => {
               app_name: 'AquaGestion',
               currency: 'FCFA',
               items_per_page: 10,
-              timezone: 'Africa/Porto-Novo'
+              timezone: 'Africa/Porto-Novo',
+              language: 'fr'
             }}
           >
             <Form.Item 
@@ -206,10 +263,7 @@ const SettingsPage: React.FC = () => {
               </Select>
             </Form.Item>
             
-            <Form.Item 
-              label="Fuseau horaire" 
-              name="timezone"
-            >
+            <Form.Item label="Fuseau horaire" name="timezone">
               <Select>
                 <Option value="Africa/Porto-Novo">Afrique/Porto-Novo (GMT+1)</Option>
                 <Option value="Europe/Paris">Europe/Paris (GMT+1)</Option>
@@ -231,11 +285,7 @@ const SettingsPage: React.FC = () => {
               </Select>
             </Form.Item>
 
-            <Form.Item 
-              label="Langue de l'interface" 
-              name="language"
-              initialValue="fr"
-            >
+            <Form.Item label="Langue de l'interface" name="language">
               <Select>
                 <Option value="fr">Français</Option>
                 <Option value="en">English</Option>
@@ -340,16 +390,39 @@ const SettingsPage: React.FC = () => {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        minHeight: '60vh' 
+        minHeight: '60vh',
+        flexDirection: 'column',
+        gap: 16
       }}>
-        <Spin size="large" tip="Chargement des paramètres..." />
+        <Spin size="large" />
+        <div>Chargement des paramètres...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 style={{ marginBottom: 20 }}>Paramètres</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2 style={{ margin: 0 }}>Paramètres</h2>
+        <Button 
+          icon={<ReloadOutlined />}
+          onClick={loadInitialData}
+          loading={pageLoading}
+        >
+          Actualiser
+        </Button>
+      </div>
+      
+      {error && (
+        <Alert
+          message="Mode dégradé"
+          description="Certaines fonctionnalités peuvent être limitées. Les modifications seront sauvegardées localement."
+          type="warning"
+          closable
+          style={{ marginBottom: 20 }}
+        />
+      )}
+      
       <Tabs defaultActiveKey="profile" items={tabItems} />
     </div>
   );

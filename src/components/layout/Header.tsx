@@ -1,4 +1,4 @@
-// src/components/Layout/Header.tsx - CORRIGÉ
+// src/components/Layout/Header.tsx - VERSION CORRIGÉE FINALE
 import React from 'react';
 import { Layout, Button, Dropdown, Avatar, Badge, notification } from 'antd';
 import { 
@@ -7,8 +7,7 @@ import {
   BellOutlined,
   LogoutOutlined,
   UserOutlined,
-  SettingOutlined,
-  ShoppingCartOutlined
+  SettingOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,8 +16,6 @@ import { toast } from 'react-hot-toast';
 import { logout } from '../../store/slices/authSlice';
 import { RootState } from '../../store';
 import api from '../../services/api';
-const logo = '../../../public/images/logo.png';
-
 
 const { Header: AntHeader } = Layout;
 
@@ -31,6 +28,7 @@ const AppHeader: React.FC<HeaderProps> = ({ collapsed, onToggleSidebar }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [logoError, setLogoError] = React.useState(false);
 
   const handleLogout = async () => {
     try {
@@ -104,8 +102,38 @@ const AppHeader: React.FC<HeaderProps> = ({ collapsed, onToggleSidebar }) => {
         
         {/* Logo + Nom de l'application */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-           <img src='/public/images/logo.png' alt="Logo AquaGestion" style={{ maxHeight: '50px', objectFit: 'contain' }} />
-          </div>
+          {/* Logo avec fallback */}
+          {!logoError ? (
+            <img 
+              src="/images/logo.png" 
+              alt="Logo AquaGestion" 
+              style={{ 
+                width: 50, 
+                height: 50, 
+                objectFit: 'contain' 
+              }}
+              onError={() => {
+                console.warn('⚠️ Logo non trouvé à /images/logo.png, utilisation du placeholder');
+                setLogoError(true);
+              }}
+            />
+          ) : (
+            <div style={{
+              width: 50,
+              height: 50,
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '20px'
+            }}>
+              AQ
+            </div>
+          )}
+          
           <div>
             <h1 style={{ 
               margin: 0, 
@@ -125,7 +153,7 @@ const AppHeader: React.FC<HeaderProps> = ({ collapsed, onToggleSidebar }) => {
             </div>
           </div>
         </div>
-
+      </div>
 
       {/* Partie droite - Notifications + Menu utilisateur */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -168,14 +196,14 @@ const AppHeader: React.FC<HeaderProps> = ({ collapsed, onToggleSidebar }) => {
                 flexShrink: 0
               }}
             >
-              {user?.name?.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
             </Avatar>
             <div style={{ lineHeight: 'normal' }}>
               <div style={{ fontWeight: 600, fontSize: 14, color: '#262626' }}>
-                {user?.name}
+                {user?.name || 'Utilisateur'}
               </div>
               <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                {user?.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Rôle'}
               </div>
             </div>
           </div>
